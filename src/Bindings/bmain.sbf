@@ -1,0 +1,3 @@
+target = _bmainmod
+sources = sip_bmainmodcmodule.cpp sip_bmainmodQVector0100QString.cpp sip_bmainmodbImage.cpp sip_bmainmodbMain.cpp
+headers = sipAPI_bmainmod.h
