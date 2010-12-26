@@ -16,10 +16,10 @@ echo "creating new files"
 $QT/qt/bin/moc bMain.h -o moc_bMain.cpp
 $PYTHON/python.exe configure.py
 
-for file in $(ls -1 *.o); do
+for file in $(ls -1 *.cpp); do
   output=`echo $file | sed 's/.cpp/.o/'`
   echo "compiling $file into $output"
-  g++ -c $CFLAGS $DEFINES $INCLUDES` $file -o $output
+  g++ -c $CFLAGS $DEFINES $INCLUDES $file -o $output
 done
 
 echo "Generting pyd"
