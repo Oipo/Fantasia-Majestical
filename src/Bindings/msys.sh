@@ -23,4 +23,4 @@ for file in $(ls -1 *.cpp); do
 done
 
 echo "Generting pyd"
-g++ $CFLAGS $LIBDIRS *.o ../../qt4/release/librandom-game-generator.a -lpython26 -lQtCore4 -lQtGui4 -o _bmainmod.pyd
+g++ $CFLAGS $LIBDIRS *.o ../../qt4/release/librandom-game-generator.a -lpython26 -lQtCore4 -lQtGui4 -lQtOpenGL4 -o _bmainmod.pyd
