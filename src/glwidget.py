@@ -111,9 +111,6 @@ class GLWidget(QGLWidget):
             glBindBuffer(GL_ARRAY_BUFFER_ARB, image.VBOTexCoords)
             glTexCoordPointer(2, GL_FLOAT, 0, None)
 
-            x, y, w, h = image.textureRect
-            dx, dy, dw, dh = image.drawRect
-
             glBindBuffer(GL_ARRAY_BUFFER_ARB, image.VBOVertices)
             glVertexPointer(3, GL_FLOAT, 0, None)
 
