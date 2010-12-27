@@ -1,2 +1,0 @@
-<a href="/tell sabayon" title="sabayon">sabayon</a>: asd
-Now listening on port 6812.
