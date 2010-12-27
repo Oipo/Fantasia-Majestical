@@ -17,6 +17,7 @@ class GLWidget(QGLWidget):
         self.vbos = False
 
         self.image = Image(QImage("test.png"), (0, 0, 63, 63), (0, 0, 63, 63))
+        self.image2 = Image(QImage("test.png"), (0, 0, 63, 63), (64, 64, 63, 63))
 
     #GL functions
     def paintGL(self):
@@ -31,11 +32,12 @@ class GLWidget(QGLWidget):
             glEnableClientState(GL_TEXTURE_COORD_ARRAY)
 
         self.drawImage(self.image)
+        self.drawImage(self.image2)
 
         if self.vbos:
             glDisableClientState(GL_VERTEX_ARRAY)
             glDisableClientState(GL_TEXTURE_COORD_ARRAY)
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0)
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, 0)
 
         glFlush()
 
@@ -54,7 +56,7 @@ class GLWidget(QGLWidget):
         Initialize GL
         '''
 
-        glEnable(GL_TEXTURE_2D)
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
         glEnable(GL_BLEND)
         glDisable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -66,6 +68,7 @@ class GLWidget(QGLWidget):
             print "using VBOs"
 
         self.createTexture(self.image)
+        self.createTexture(self.image2)
 
     #util functions
     def createTexture(self, image):
@@ -78,12 +81,12 @@ class GLWidget(QGLWidget):
         texture = glGenTextures(1)
         imgdata = img.bits().asstring(img.numBytes())
 
-        glBindTexture(GL_TEXTURE_2D, texture)
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture)
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
 
         image.textureId = texture
 
@@ -98,17 +101,20 @@ class GLWidget(QGLWidget):
         glDeleteTextures(image.textureId)
 
         if self.vbos:
-            glDeleteBuffersARB(image.VBOVertices)
-            glDeleteBuffersARB(image.VBOTexCoords)
+            glDeleteBuffers(image.VBOVertices)
+            glDeleteBuffers(image.VBOTexCoords)
 
     def drawImage(self, image):
         if self.vbos:
-            glBindTexture(GL_TEXTURE_2D, image.textureId)
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, image.textureId)
 
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, image.VBOTexCoords)
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, image.VBOTexCoords)
             glTexCoordPointer(2, GL_FLOAT, 0, None)
 
-            glBindBufferARB(GL_ARRAY_BUFFER_ARB, image.VBOVertices)
+            x, y, w, h = image.textureRect
+            dx, dy, dw, dh = image.drawRect
+
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, image.VBOVertices)
             glVertexPointer(3, GL_FLOAT, 0, None)
 
             glDrawArrays(GL_QUADS, 0, 4);
@@ -122,7 +128,7 @@ class GLWidget(QGLWidget):
         drawRect is a list of size 4, is used to determine the drawing size
         '''
 
-        glBindTexture(GL_TEXTURE_2D, texture)
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture)
 
         x, y, w, h = textureRect
         dx, dy, dw, dh = drawRect

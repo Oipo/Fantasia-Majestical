@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
+from OpenGL.arrays import ArrayDatatype as ADT
 
 import numpy
 
@@ -22,7 +23,7 @@ class Image:
         x, y, w, h = textureRect
         dx, dy, dw, dh = drawRect
 
-    	self.TexCoords = numpy.zeros((4, 2))
+    	self.TexCoords = numpy.zeros((4, 2), 'f')
 
         self.TexCoords[0, 0] = x
         self.TexCoords[0, 1] = y+h
@@ -37,7 +38,7 @@ class Image:
         self.TexCoords[3, 1] = y
 
 
-    	self.Vertices = numpy.zeros((4, 3))
+    	self.Vertices = numpy.zeros((4, 3), 'f')
 
         self.Vertices[0, 0] = dx
         self.Vertices[0, 1] = dy
@@ -58,13 +59,13 @@ class Image:
     def buildVBO(self):
         #Generate and bind the vertice coordinate buffer
     	self.VBOVertices = int(glGenBuffersARB(1))
-        glBindBufferARB(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
-        glBufferDataARB(GL_ARRAY_BUFFER_ARB, self.Vertices, self.dynamicity);
+        glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
+        glBufferData(GL_ARRAY_BUFFER_ARB, ADT.arrayByteCount(self.Vertices), (self.Vertices), self.dynamicity)
 
         #Generate and bind the texture coordinate buffer
         self.VBOTexCoords = int(glGenBuffersARB(1))
-        glBindBufferARB(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
-        glBufferDataARB(GL_ARRAY_BUFFER_ARB, self.TexCoords, self.dynamicity)
+        glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
+        glBufferData(GL_ARRAY_BUFFER_ARB, ADT.arrayByteCount(self.TexCoords), (self.TexCoords), self.dynamicity)
 
         #Delete from RAM, it's in VRAM now
         self.Vertices = None
