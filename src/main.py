@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.timerTimeout)
-        self.timer.start(50)
+        self.timer.start(13)
 
         self.setCentralWidget(fmGlobals.glwidget)
         fmGlobals.glwidget.makeCurrent()

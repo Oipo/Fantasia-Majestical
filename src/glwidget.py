@@ -24,9 +24,10 @@ class GLWidget(QGLWidget):
         QGLWidget.__init__(self, parent)
         self.setMinimumSize(640, 480)
         self.x = 0
-        self.images = []
+        self.images = dict()
         self.lastMousePos = [0, 0]
         self.camera = [0, 0]
+        self.layers = []
 
     #GL functions
     def paintGL(self):
@@ -40,14 +41,16 @@ class GLWidget(QGLWidget):
 
         if fmGlobals.vbos:
             vbolist = []
-            for img in self.images: #leave it here, removing it increases CPU consumption against expectations
-                vbolist.append(img.textureId)
-                vbolist.append(img.VBOTexCoords)
-                vbolist.append(img.VBOVertices)
+            for layer in self.layers:
+                for img in self.images[layer]:#leave it here, removing it increases CPU consumption against expectations
+                    vbolist.append(img.textureId)
+                    vbolist.append(img.VBOTexCoords)
+                    vbolist.append(img.VBOVertices)
             glmod.drawVBO(tuple(vbolist))
         else:
-            for img in self.images:
-                self.drawImage(img)
+            for layer in self.layers:
+                for img in self.images[layer]:
+                    self.drawImage(img)
 
         glTranslatef(-self.camera[0], -self.camera[1], 0)
 
@@ -79,7 +82,7 @@ class GLWidget(QGLWidget):
             print "using VBOs"
 
     #util functions
-    def createImage(self, qimage, textureRect, drawRect, dynamicity = GL_DYNAMIC_DRAW_ARB):
+    def createImage(self, qimage, layer, textureRect, drawRect, dynamicity = GL_DYNAMIC_DRAW_ARB):
         '''
         image is from image.py
         texture is an int, pointing to the correct location in VRAM
@@ -103,7 +106,12 @@ class GLWidget(QGLWidget):
         if fmGlobals.vbos:
             image.buildVBO()
 
-        self.images.append(image)
+        if layer not in self.images:
+            self.images[layer] = []
+            self.layers = self.images.keys()
+            self.layers.sort()
+
+        self.images[layer].append(image)
 
         return image
 
