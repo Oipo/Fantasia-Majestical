@@ -2,23 +2,33 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from glwidget import *
+from fmMap import *
+import fmGlobals
 
 class MainWindow(QMainWindow):
     ''' Example class for using SpiralWidget'''
     
     def __init__(self):
         QMainWindow.__init__(self)
-        self.widget = GLWidget(self)    
+        fmGlobals.glwidget = GLWidget(self)   
+
         self.timer = QTimer()
         self.timer.timeout.connect(self.timerTimeout)
         self.timer.start(50)
-        self.setCentralWidget(self.widget)
+
+        self.setCentralWidget(fmGlobals.glwidget)
+        fmGlobals.glwidget.makeCurrent()
+
+    def start(self):
+
+        fmGlobals.worldmap = WorldMap() 
 
     def timerTimeout(self):
-        self.widget.updateGL()
+        fmGlobals.glwidget.updateGL()
 
 if __name__ == '__main__':
     app = QApplication(['Fantasia Majestical'])
     window = MainWindow()
     window.show()
+    window.start()
     app.exec_()

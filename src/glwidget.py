@@ -4,6 +4,8 @@ from OpenGL.GL.ARB.vertex_buffer_object import *
 from PyQt4.QtGui import *
 from PyQt4.QtOpenGL import *
 
+import fmGlobals
+
 mod = False
 try:
     import glmod
@@ -21,9 +23,10 @@ class GLWidget(QGLWidget):
     def __init__(self, parent):
         QGLWidget.__init__(self, parent)
         self.setMinimumSize(640, 480)
-        self.vbos = False
         self.x = 0
         self.images = []
+        self.lastMousePos = [0, 0]
+        self.camera = [0, 0]
 
     #GL functions
     def paintGL(self):
@@ -33,7 +36,9 @@ class GLWidget(QGLWidget):
         
         glClear(GL_COLOR_BUFFER_BIT)
 
-        if self.vbos:
+        glTranslatef(self.camera[0], self.camera[1], 0)
+
+        if fmGlobals.vbos:
             vbolist = []
             for img in self.images: #leave it here, removing it increases CPU consumption against expectations
                 vbolist.append(img.textureId)
@@ -44,6 +49,8 @@ class GLWidget(QGLWidget):
             for img in self.images:
                 self.drawImage(img)
 
+        glTranslatef(-self.camera[0], -self.camera[1], 0)
+
     def resizeGL(self, w, h):
         '''
         Resize the GL window 
@@ -52,8 +59,9 @@ class GLWidget(QGLWidget):
         glViewport(0, 0, w, h)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glOrtho(0, w, h, 0, -1, 1);
-    
+        glOrtho(0, w, h, 0, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+
     def initializeGL(self):
         '''
         Initialize GL
@@ -67,22 +75,17 @@ class GLWidget(QGLWidget):
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         if mod and glInitVertexBufferObjectARB():
-            self.vbos = True
+            fmGlobals.vbos = True
             print "using VBOs"
 
-        qimg = QImage("test.png")
-        for x in range(20):
-            for y in range(20):
-                img = Image(qimg, (0, 0, 63, 63), (x*63, y*63, 63, 63), self.vbos)
-                self.images.append(img)
-                self.createTexture(img)
-
     #util functions
-    def createTexture(self, image):
+    def createImage(self, qimage, textureRect, drawRect, dynamicity = GL_DYNAMIC_DRAW_ARB):
         '''
         image is from image.py
         texture is an int, pointing to the correct location in VRAM
         '''
+
+        image = Image(qimage, textureRect, drawRect, dynamicity)
 
         img = self.convertToGLFormat(image.image)
         texture = glGenTextures(1)
@@ -97,8 +100,12 @@ class GLWidget(QGLWidget):
 
         image.textureId = texture
 
-        if self.vbos:
+        if fmGlobals.vbos:
             image.buildVBO()
+
+        self.images.append(image)
+
+        return image
 
     def deleteImage(self, image):
         '''
@@ -107,7 +114,7 @@ class GLWidget(QGLWidget):
 
         glDeleteTextures(image.textureId)
 
-        if self.vbos:
+        if fmGlobals.vbos:
             glDeleteBuffers(image.VBOVertices)
             glDeleteBuffers(image.VBOTexCoords)
 
@@ -132,6 +139,9 @@ class GLWidget(QGLWidget):
         x, y, w, h = textureRect
         dx, dy, dw, dh = drawRect
 
+        x += self.camera[0]
+        y += self.camera[1]
+
         glBegin(GL_QUADS);
         #Top-left vertex (corner)
         glTexCoord2i(x, y+h); #image/texture
@@ -150,8 +160,15 @@ class GLWidget(QGLWidget):
         glVertex3f(dx, (dy+dh), 0);
         glEnd();
 
+    def mouseMoveEvent(self, mouse):
+        self.camera[0] += mouse.pos().x() - self.lastMousePos[0]
+        self.camera[1] += mouse.pos().y() - self.lastMousePos[1]
+        self.lastMousePos = [mouse.pos().x(), mouse.pos().y()]
 
-# You don't need anything below this
+        mouse.accept()
 
-        
+    def mousePressEvent(self, mouse):
+        self.lastMousePos = (mouse.pos().x(), mouse.pos().y())
+
+        mouse.accept()
 

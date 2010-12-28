@@ -2,6 +2,8 @@ from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
 from OpenGL.arrays import ArrayDatatype as ADT
 
+import fmGlobals
+
 import numpy
 
 class Image:
@@ -9,22 +11,18 @@ class Image:
     Class for storing image data, position and some opengl stuff
     '''
 
-    def __init__(self, image, textureRect, drawRect, vbos, dynamicity = GL_DYNAMIC_DRAW_ARB):
+    def __init__(self, image, textureRect, drawRect, dynamicity = GL_DYNAMIC_DRAW_ARB):
         self.image = image
         self.drawRect = drawRect
         self.textureRect = textureRect
         self.dynamicity = dynamicity
 
         self.textureId = None
-        self.vbos = vbos
 
         self.VBOTexCoords = None
         self.VBOVertices = None
 
-        self.x, self.y, self.w, self.h = textureRect
-        self.dx, self.dy, self.dw, self.dh = drawRect
-
-        if self.vbos:
+        if fmGlobals.vbos:
             x, y, w, h = textureRect
             dx, dy, dw, dh = drawRect
 
@@ -57,10 +55,11 @@ class Image:
             self.Vertices[3, 0] = dx
             self.Vertices[3, 1] = dy+dh
 
+
     def setDrawRect(self, drawRect):
         self.drawRect = drawRect
 
-        if self.vbos:
+        if fmGlobals.vbos:
             self.Vertices = numpy.zeros((4, 3), 'f')
             dx, dy, dw, dh = drawRect
 

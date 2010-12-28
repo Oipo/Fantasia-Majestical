@@ -8,7 +8,7 @@ import random
 
 class Province:
     
-    def __init__(self, initname="Defaultaria", disploc=(0, 0), image=None, initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5):
+    def __init__(self, initname="Defaultaria", image=None, initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5):
         self._name = initname
         self._population = initpop
         self._tax = inittax
@@ -17,7 +17,6 @@ class Province:
         self._goodsvalue = initgoods
         self._unrest = initunrest
         self._toltax = inittoltax
-        self._displayloc = disploc
         self._img = image
         
         #Even for a temporary militia, roughly 25% are too young to fight, 10% are too old, and 15% are otherwise physically incapable
