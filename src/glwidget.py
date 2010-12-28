@@ -4,6 +4,13 @@ from OpenGL.GL.ARB.vertex_buffer_object import *
 from PyQt4.QtGui import *
 from PyQt4.QtOpenGL import *
 
+mod = False
+try:
+    import glmod
+    mod = True
+except:
+    pass
+
 from image import *
 
 class GLWidget(QGLWidget):
@@ -15,9 +22,8 @@ class GLWidget(QGLWidget):
         QGLWidget.__init__(self, parent)
         self.setMinimumSize(640, 480)
         self.vbos = False
-
-        self.image = Image(QImage("test.png"), (0, 0, 63, 63), (0, 0, 63, 63))
-        self.image2 = Image(QImage("test.png"), (0, 0, 63, 63), (64, 64, 63, 63))
+        self.x = 0
+        self.images = []
 
     #GL functions
     def paintGL(self):
@@ -28,18 +34,15 @@ class GLWidget(QGLWidget):
         glClear(GL_COLOR_BUFFER_BIT)
 
         if self.vbos:
-            glEnableClientState(GL_VERTEX_ARRAY)
-            glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-
-        self.drawImage(self.image)
-        self.drawImage(self.image2)
-
-        if self.vbos:
-            glDisableClientState(GL_VERTEX_ARRAY)
-            glDisableClientState(GL_TEXTURE_COORD_ARRAY)
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, 0)
-
-        glFlush()
+            vbolist = []
+            for img in self.images: #leave it here, removing it increases CPU consumption against expectations
+                vbolist.append(img.textureId)
+                vbolist.append(img.VBOTexCoords)
+                vbolist.append(img.VBOVertices)
+            glmod.drawVBO(tuple(vbolist))
+        else:
+            for img in self.images:
+                self.drawImage(img)
 
     def resizeGL(self, w, h):
         '''
@@ -63,12 +66,16 @@ class GLWidget(QGLWidget):
         glViewport(0, 0, self.width(), self.height())
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
-        if glInitVertexBufferObjectARB():
+        if mod and glInitVertexBufferObjectARB():
             self.vbos = True
             print "using VBOs"
 
-        self.createTexture(self.image)
-        self.createTexture(self.image2)
+        qimg = QImage("test.png")
+        for x in range(20):
+            for y in range(20):
+                img = Image(qimg, (0, 0, 63, 63), (x*63, y*63, 63, 63), self.vbos)
+                self.images.append(img)
+                self.createTexture(img)
 
     #util functions
     def createTexture(self, image):
@@ -105,16 +112,11 @@ class GLWidget(QGLWidget):
             glDeleteBuffers(image.VBOTexCoords)
 
     def drawImage(self, image):
-        if self.vbos:
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, image.textureId)
+        if mod:
+            x, y, w, h = image.textureRect
+            dx, dy, dw, dh = image.drawRect
 
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, image.VBOTexCoords)
-            glTexCoordPointer(2, GL_FLOAT, 0, None)
-
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, image.VBOVertices)
-            glVertexPointer(3, GL_FLOAT, 0, None)
-
-            glDrawArrays(GL_QUADS, 0, 4);
+            glmod.drawTexture(image.textureId, dx, dy, dw, dh, x, y, w, h)
         else:
             self.drawTexture(image.textureId, image.textureRect, image.drawRect)
 
