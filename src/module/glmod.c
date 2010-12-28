@@ -9,6 +9,9 @@ static PyObject * glmod_drawTexture(PyObject *self, PyObject* args)
 
     ok = PyArg_ParseTuple(args, "iiiiiiiii", &texid, &x, &y, &w, &h, &cx, &cy, &cw, &ch);
 
+    if(!ok)
+       return PyInt_FromLong(-1L); 
+
     glBindTexture(extension, texid);
 
     glBegin(GL_QUADS);
@@ -42,7 +45,7 @@ static PyObject * glmod_drawVBO(PyObject *self, PyObject* args)
         return PyInt_FromLong(-1L);
     }
 
-    int texid[PyTuple_Size(tuple)/3], VBOTex[PyTuple_Size(tuple)/3], VBOCor[PyTuple_Size(tuple)/3], i, x;
+    int texid[PyTuple_Size(tuple)/3], VBOTex[PyTuple_Size(tuple)/3], VBOVer[PyTuple_Size(tuple)/3], i, x;
 
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -55,7 +58,7 @@ static PyObject * glmod_drawVBO(PyObject *self, PyObject* args)
         else if(i % 3 == 1)
             VBOTex[i/3] = x;
         else if(i % 3 == 2)
-            VBOCor[i/3] = x;
+            VBOVer[i/3] = x;
     }
 
     for(i = 0; i < PyTuple_Size(tuple)/3; i++)
@@ -65,7 +68,7 @@ static PyObject * glmod_drawVBO(PyObject *self, PyObject* args)
         glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOTex[i]);
         glTexCoordPointer(2, GL_FLOAT, 0, 0);
 
-        glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOCor[i]);
+        glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOVer[i]);
         glVertexPointer(3, GL_FLOAT, 0, 0);
 
         glDrawArrays(GL_QUADS, 0, 4);
@@ -74,6 +77,64 @@ static PyObject * glmod_drawVBO(PyObject *self, PyObject* args)
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+
+    return PyInt_FromLong(0L);
+}
+
+static PyObject * glmod_drawVBO2(PyObject *self, PyObject* args)
+{
+    PyObject *tuple = PyTuple_GetItem(args, 0);
+
+    if(PyTuple_Size(tuple) < 3)
+    {
+        printf("Failure with size: %i\n", PyTuple_Size(tuple));
+        return PyInt_FromLong(-1L);
+    }
+
+    int texid[PyTuple_Size(tuple)-2], VBOTex, VBOVer, i, x;
+
+    VBOTex = PyInt_AsLong(PyTuple_GetItem(tuple, 0));
+    VBOVer = PyInt_AsLong(PyTuple_GetItem(tuple, 1));
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+    for(i = 2; i < PyTuple_Size(tuple); i++)
+    {
+        x = PyInt_AsLong(PyTuple_GetItem(tuple, i));
+        texid[i-2] = x;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOTex);
+    glTexCoordPointer(2, GL_FLOAT, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOVer);
+    glVertexPointer(3, GL_FLOAT, 0, 0);
+
+    for(i = 0; i < PyTuple_Size(tuple)-2; i++)
+    {
+        glBindTexture(extension, texid[i]);
+
+        glDrawArrays(GL_QUADS, i*4, 4);
+    }
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+
+    return PyInt_FromLong(0L);
+}
+
+static PyObject * glmod_glBufferData(PyObject *self, PyObject* args)
+{
+    int target, size, data, type, ok;
+
+    ok = PyArg_ParseTuple(args, "iiii", &target, &size, &data, &type);
+
+    if(!ok)
+       return PyInt_FromLong(-1L); 
+
+    glBufferData(target, size, data, type);
 
     return PyInt_FromLong(0L);
 }
@@ -128,9 +189,31 @@ static PyObject * glmod_clear(PyObject *self, PyObject* args)
     return PyInt_FromLong(0L);
 }
 
+//blatantly stolen from Box2D
+static PyObject * glmod_nextPowerOfTwo(PyObject *self, PyObject* args)
+{
+    int x, ok;
+
+    ok = PyArg_ParseTuple(args, "i", &x);
+
+    if(!ok)
+        return PyInt_FromLong(-1L);
+
+    x |= (x >> 1);
+    x |= (x >> 2);
+    x |= (x >> 4);
+    x |= (x >> 8);
+    x |= (x >> 16);
+    x++;
+    return PyInt_FromLong(x);
+}
+
 static PyMethodDef GLModMethods[] = {
     {"drawTexture",  glmod_drawTexture, METH_VARARGS, "draw a texture"},
     {"drawVBO",  glmod_drawVBO, METH_VARARGS, "draw var args VBO"},
+    {"drawVBO2",  glmod_drawVBO2, METH_VARARGS, "draw var args VBO"},
+    {"glBufferData",  glmod_glBufferData, METH_VARARGS, "glBufferData"},
+    {"nextPowerOfTwo",  glmod_nextPowerOfTwo, METH_VARARGS, "glBufferData"},
     {"generateTexture",  glmod_generateTexture, METH_VARARGS, "generate texture id"},
     {"clear",  glmod_clear, METH_VARARGS, "clear"},
     {"init",  glmod_init, METH_VARARGS, "init"},

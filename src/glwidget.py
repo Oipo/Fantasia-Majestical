@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
+from OpenGL.arrays import ArrayDatatype as ADT
 
 from PyQt4.QtGui import *
 from PyQt4.QtOpenGL import *
@@ -29,6 +30,12 @@ class GLWidget(QGLWidget):
         self.camera = [0, 0]
         self.layers = []
         self.zoom = 1
+        self.VBOVertices = None
+        self.VBOTexCoords = None
+        self.VBOBuffer = 0
+        self.offsetv = 0
+        self.offsett = 0
+        self.vbolist = []
 
     #GL functions
     def paintGL(self):
@@ -38,24 +45,27 @@ class GLWidget(QGLWidget):
         
         glClear(GL_COLOR_BUFFER_BIT)
 
-        glTranslatef(self.camera[0], self.camera[1], 0)
+        glPushMatrix()
+        glTranslatef(self.camera[0], self.camera[1], 1)
         glScaled(self.zoom, self.zoom, 0)
 
         if fmGlobals.vbos:
-            vbolist = []
             for layer in self.layers:
-                for img in self.images[layer]:#leave it here, removing it increases CPU consumption against expectations
-                    vbolist.append(img.textureId)
-                    vbolist.append(img.VBOTexCoords)
-                    vbolist.append(img.VBOVertices)
-            glmod.drawVBO(tuple(vbolist))
+                for img in self.images[layer]:
+                    self.vbolist.append(img.textureId)
+                    self.vbolist.append(img.VBOTexCoords)
+                    self.vbolist.append(img.VBOVertices)
+            glmod.drawVBO(tuple(self.vbolist))
+
+            #glmod.drawVBO2(tuple(self.vbolist))
         else:
             for layer in self.layers:
                 for img in self.images[layer]:
                     self.drawImage(img)
 
         glScaled(1/self.zoom, 1/self.zoom, 0)
-        glTranslatef(-self.camera[0], -self.camera[1], 0)
+        glTranslatef(-self.camera[0], -self.camera[1], 1)
+        glPopMatrix()
 
     def resizeGL(self, w, h):
         '''
@@ -69,7 +79,7 @@ class GLWidget(QGLWidget):
         glMatrixMode(GL_MODELVIEW)
 
     def initializeGL(self):
-        '''
+        '''            self.VBOTexCoords = int(glGenBuffersARB(1))
         Initialize GL
         '''
 
@@ -80,12 +90,19 @@ class GLWidget(QGLWidget):
         glViewport(0, 0, self.width(), self.height())
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
-        if mod and glInitVertexBufferObjectARB():
+        if mod and not glInitVertexBufferObjectARB():
             fmGlobals.vbos = True
             print "using VBOs"
+            self.VBOVertices = int(glGenBuffersARB(1))
+            self.VBOTexCoords = int(glGenBuffersARB(1))
+
+        qimg = QImage("test.png")
+        for x in range(20):
+            for y in range(20):
+                self.createImage(qimg, 1, (0, 0, 63, 63), (x*16, y*16, 16, 16))
 
     #util functions
-    def createImage(self, qimage, layer, textureRect, drawRect, dynamicity = GL_DYNAMIC_DRAW_ARB):
+    def createImage(self, qimage, layer, textureRect, drawRect, dynamicity = GL_STATIC_DRAW_ARB):
         '''
         image is from image.py
         texture is an int, pointing to the correct location in VRAM
@@ -107,7 +124,8 @@ class GLWidget(QGLWidget):
         image.textureId = texture
 
         if fmGlobals.vbos:
-            image.buildVBO()
+            #image.buildVBO()
+            pass
 
         if layer not in self.images:
             self.images[layer] = []
@@ -116,7 +134,69 @@ class GLWidget(QGLWidget):
 
         self.images[layer].append(image)
 
+        if fmGlobals.vbos:
+            '''self.fillBuffers(image)
+            self.vbolist = [self.VBOTexCoords, self.VBOVertices]
+            for layer in self.layers:
+                for img in self.images[layer]:#leave it here, removing it increases CPU consumption against expectations
+                    self.vbolist.append(img.textureId)'''
+            image.buildVBO()
+
+
         return image
+
+    def fillBuffers(self, image = None):
+        size = 0
+        vertByteCount = texByteCount = 0
+
+        for layer in self.layers:
+            size += len(self.images[layer])
+            vertByteCount = ADT.arrayByteCount(self.images[layer][0].Vertices)
+            texByteCount = ADT.arrayByteCount(self.images[layer][0].TexCoords)
+
+        print vertByteCount, texByteCount, size
+        print self.VBOBuffer
+
+        if self.VBOBuffer <= size or image == None:
+
+            self.VBOBuffer = glmod.nextPowerOfTwo(size)
+
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
+            glBufferData(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*vertByteCount, None, GL_STATIC_DRAW_ARB)
+
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
+            glBufferData(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*texByteCount, None, GL_STATIC_DRAW_ARB)
+
+        self.offsetv = self.offsett = 0
+
+        for layer in self.layers:
+            for img in self.images[layer]:
+                img.offsetv = self.offsetv
+                img.offsett = self.offsett
+
+                glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
+                glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsetv, ADT.arrayByteCount(img.Vertices), img.Vertices)
+
+                glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
+                glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsett, ADT.arrayByteCount(img.TexCoords), img.TexCoords)
+
+                self.offsetv += ADT.arrayByteCount(img.Vertices)
+                self.offsett += ADT.arrayByteCount(img.TexCoords)
+
+        '''else:
+            image.offsetv = self.offsetv
+            image.offsett = self.offsett
+
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
+            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsetv, ADT.arrayByteCount(image.Vertices), image.Vertices)
+
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
+            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsett, ADT.arrayByteCount(image.TexCoords), image.TexCoords)
+
+            self.offsetv += ADT.arrayByteCount(image.Vertices)
+            self.offsett += ADT.arrayByteCount(image.TexCoords)'''
+
+
 
     def deleteImage(self, image):
         '''
@@ -189,8 +269,8 @@ class GLWidget(QGLWidget):
         elif mouse.delta() > 0:
             self.zoom += 0.10
 
-        if self.zoom < 0.25:
-            self.zoom = 0.25
+        if self.zoom < 0.30:
+            self.zoom = 0.30
         elif self.zoom > 4:
             self.zoom = 4
 
