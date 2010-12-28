@@ -28,6 +28,7 @@ class GLWidget(QGLWidget):
         self.lastMousePos = [0, 0]
         self.camera = [0, 0]
         self.layers = []
+        self.zoom = 1
 
     #GL functions
     def paintGL(self):
@@ -38,6 +39,7 @@ class GLWidget(QGLWidget):
         glClear(GL_COLOR_BUFFER_BIT)
 
         glTranslatef(self.camera[0], self.camera[1], 0)
+        glScaled(self.zoom, self.zoom, 0)
 
         if fmGlobals.vbos:
             vbolist = []
@@ -52,6 +54,7 @@ class GLWidget(QGLWidget):
                 for img in self.images[layer]:
                     self.drawImage(img)
 
+        glScaled(1/self.zoom, 1/self.zoom, 0)
         glTranslatef(-self.camera[0], -self.camera[1], 0)
 
     def resizeGL(self, w, h):
@@ -177,6 +180,19 @@ class GLWidget(QGLWidget):
 
     def mousePressEvent(self, mouse):
         self.lastMousePos = (mouse.pos().x(), mouse.pos().y())
+
+        mouse.accept()
+
+    def wheelEvent(self, mouse):
+        if mouse.delta() < 0:
+            self.zoom -= 0.10
+        elif mouse.delta() > 0:
+            self.zoom += 0.10
+
+        if self.zoom < 0.25:
+            self.zoom = 0.25
+        elif self.zoom > 4:
+            self.zoom = 4
 
         mouse.accept()
 
