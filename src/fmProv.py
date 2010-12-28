@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 #
 #fmProv - Province code
 #
@@ -8,7 +8,7 @@ import random
 
 class Province:
     
-    def __init__(self, initname="Defaultaria", initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5):
+    def __init__(self, initname="Defaultaria", disploc=(0, 0), image=None, initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5):
         self._name = initname
         self._population = initpop
         self._tax = inittax
@@ -17,6 +17,8 @@ class Province:
         self._goodsvalue = initgoods
         self._unrest = initunrest
         self._toltax = inittoltax
+        self._displayloc = disploc
+        self._img = image
         
         #Even for a temporary militia, roughly 25% are too young to fight, 10% are too old, and 15% are otherwise physically incapable
         self._fightpop = initpop * 0.60
@@ -26,6 +28,18 @@ class Province:
         
         #Something like 2% can be raised for an army without significant difficulty (this one is rather variable though)
         self._normallevy = initpop * 0.02
+        
+    def name(self):
+        '''Returns the province's name.'''
+        return self._name
+    
+    def displayOffset(self):
+        '''Returns the x, y coordinates of the province's image.'''
+        return self._displayloc
+    
+    def image(self):
+        '''Returns the filename of the province's map image.'''
+        return self._img
         
     def population(self):
         '''Returns the province's current population.'''
@@ -92,7 +106,7 @@ class Province:
                 self._unrest += 0.25 + ((self._tax - self._toltax) * 0.25)
             elif self._tax < self._toltax:
                 self._toltax -= 0.1
-                self._unrest += 0.125 + ((self._tax - self._toltax) * 0.125)
+                self._unrest -= 0.125 + ((self._tax - self._toltax) * 0.125)
         else:
             self._toltax = self._tax
             if self._unrest > 10: self._unrest -= 0.1
