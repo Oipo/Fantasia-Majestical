@@ -38,6 +38,7 @@ class GLWidget(QGLWidget):
         
         glClear(GL_COLOR_BUFFER_BIT)
 
+        glPushMatrix()
         glTranslatef(self.camera[0], self.camera[1], 0)
         glScaled(self.zoom, self.zoom, 0)
 
@@ -56,6 +57,7 @@ class GLWidget(QGLWidget):
 
         glScaled(1/self.zoom, 1/self.zoom, 0)
         glTranslatef(-self.camera[0], -self.camera[1], 0)
+        glPopMatrix()
 
     def resizeGL(self, w, h):
         '''
