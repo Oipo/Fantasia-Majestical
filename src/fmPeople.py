@@ -91,16 +91,13 @@ class Character:
         '''Returns the character's actual internal name.'''
         return self._name
     
-    def getStat(self, statname):
-        '''Returns the requested statistic.'''
+    def stat(self, statname):
+        '''Returns the character's value in a given statistic.'''
         return self._stats[statname]
     
     def hasPersona(self, name):
         '''Returns whether the passed name is one of the character's.'''
         return self._alts.has_key(name)
-    
-    def stat(self, name):
-        '''Returns the character's value in a given statistic.'''
     
     def createPersona(self, name):
         '''Creates an entirely new persona for this character.'''
