@@ -3,6 +3,7 @@ from PyQt4.QtGui import *
 
 from glwidget import *
 from fmMap import *
+from fmRsrcPanel import *
 import fmGlobals
 
 class MainWindow(QMainWindow):
@@ -14,23 +15,24 @@ class MainWindow(QMainWindow):
         '''
         QMainWindow.__init__(self)
 
-        fmGlobals.glwidget = GLWidget(self)   
+        fmGlobals.glwidget = GLWidget(self)
+        self.setCentralWidget(fmGlobals.glwidget)
+        fmGlobals.glwidget.makeCurrent() 
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.timerTimeout)
-        self.timer.start(13)
+        self.drawTimer = QTimer()
+        self.drawTimer.timeout.connect(self.drawTimerTimeout)
+        self.drawTimer.start(13)
         
         self.monthTimer = QTimer()
         self.monthTimer.timeout.connect(self.monthTimerTimeout)
         self.monthTimer.start(2000)
 
-        self.setCentralWidget(fmGlobals.glwidget)
-        fmGlobals.glwidget.makeCurrent()
-
     def start(self):
-        fmGlobals.worldmap = WorldMap() 
+        fmGlobals.worldmap = WorldMap()
 
-    def timerTimeout(self):
+        self.rsrcPanel = RsrcPanel(self)
+
+    def drawTimerTimeout(self):
         fmGlobals.glwidget.updateGL()
         
     def monthTimerTimeout(self):

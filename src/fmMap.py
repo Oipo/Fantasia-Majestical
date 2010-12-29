@@ -6,11 +6,15 @@
 
 import fmProv, fmGlobals, fmPeople, fmGov, fmPlayer
 
+from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-class WorldMap:
+class WorldMap(QObject):
+
+    updateSlot = pyqtSignal()
     
     def __init__(self):
+        QObject.__init__(self)
         self._provinces = {}
         self._month = 0
 
@@ -32,7 +36,7 @@ class WorldMap:
                           "Southwestshire":("Southeastland", "Northwestia"),
                           "Northeastica":("Southeastland", "Northwestia"),
                           "Southeastland":("Southwestshire", "Northeastica")}
-        
+
         #semi-debug stuff----
         self._tmpsov = fmPeople.Character("Test Sovereign")
         self._governments = {"Duchy of Northwestia":fmGov.Government(self, "Northwestia", self._tmpsov)}                  
@@ -67,3 +71,5 @@ class WorldMap:
         print "Month " + str(self._month)
         self._players["Test Player"].debugPrint()
         self.province("Northwestia").debugPrint()
+
+        self.updateSlot.emit()
