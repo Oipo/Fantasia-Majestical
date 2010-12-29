@@ -183,15 +183,26 @@ class GLWidget(QGLWidget):
         mouse.accept()
 
     def wheelEvent(self, mouse):
+        oldCoord = [mouse.pos().x(), mouse.pos().y()]
+        oldCoord[0] *= float(1)/self.zoom
+        oldCoord[1] *= float(1)/self.zoom
+
+        oldCoord2 = self.camera
+        oldCoord2[0] *= float(1)/self.zoom
+        oldCoord2[1] *= float(1)/self.zoom
+
         if mouse.delta() < 0:
-            self.zoom -= 0.10
+            self.zoom -= 0.15
         elif mouse.delta() > 0:
-            self.zoom += 0.10
+            self.zoom += 0.15
 
         if self.zoom < 0.25:
             self.zoom = 0.25
         elif self.zoom > 4:
             self.zoom = 4
+
+        self.camera[0] = oldCoord2[0] * self.zoom - ((oldCoord[0]*self.zoom)-mouse.pos().x())
+        self.camera[1] = oldCoord2[1] * self.zoom - ((oldCoord[1]*self.zoom)-mouse.pos().y())
 
         mouse.accept()
 

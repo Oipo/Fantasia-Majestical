@@ -6,9 +6,12 @@ from fmMap import *
 import fmGlobals
 
 class MainWindow(QMainWindow):
-    ''' Example class for using SpiralWidget'''
+    '''Wrapper class for...well, the game? Maybe this needs to be called the game engine then'''
     
     def __init__(self):
+        '''
+        Only initialize critical components(like opengl) here, use start() for anything else
+        '''
         QMainWindow.__init__(self)
         fmGlobals.glwidget = GLWidget(self)   
 
@@ -20,7 +23,6 @@ class MainWindow(QMainWindow):
         fmGlobals.glwidget.makeCurrent()
 
     def start(self):
-
         fmGlobals.worldmap = WorldMap() 
 
     def timerTimeout(self):
