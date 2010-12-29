@@ -152,9 +152,6 @@ class GLWidget(QGLWidget):
         x, y, w, h = textureRect
         dx, dy, dw, dh = drawRect
 
-        x += self.camera[0]
-        y += self.camera[1]
-
         glBegin(GL_QUADS);
         #Top-left vertex (corner)
         glTexCoord2i(x, y+h); #image/texture
