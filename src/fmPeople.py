@@ -84,7 +84,7 @@ class Character:
                      "poisons", "lockpicking", "equestrian", "sociability",
                      "crafting", "misdirection", "mining", "architecture",
                      "lying", "lore", "gluttony", "patience", "wit",
-                     "narcissism"]:
+                     "narcissism", "leadership"]:
                          self._stats[stat] = _rstat()
         
     def name(self):
