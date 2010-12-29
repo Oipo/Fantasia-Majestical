@@ -11,7 +11,7 @@ class Government:
         self._province = startingprovincename
         self._leader = leader
         self._treasury = startingtreasury
-        self._province.setGovernment(self)
+        self._world.province(self._province).setGovernment(self)
         
     def treasury(self):
         '''Returns the current treasury value.'''
@@ -31,15 +31,15 @@ class Government:
         
     def collectTax(self):
         '''Collect current monthly tax in the province.'''
-        self.changeTreasury(self.world.province(self._province).getTax())
+        self.changeTreasury(self._world.province(self._province).getTax())
             
     def collectProduction(self):
         '''Collect current monthly goods value in the province.'''
-        self.changeTreasury(self.world.province(self._province).goodsValue())
+        self.changeTreasury(self._world.province(self._province).goodsValue())
         
     def changeProvince(self, newprovname):
         '''Moves the government to a new province.'''
         if self._province:
             self._province.setGovernment(None)
         self._province = newprovname
-        self._province.setGovernment(self)
+        self._world.province(self._province).setGovernment(self)

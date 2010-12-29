@@ -42,3 +42,5 @@ class Player:
         '''Change the player's government's treasury by amount.'''
         self._gov.changeTreasury(amount)
         
+    def debugPrint(self):
+        print "Player Treasury: " + str(self.treasury())
