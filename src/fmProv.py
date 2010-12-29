@@ -8,7 +8,7 @@ import random
 
 class Province:
     
-    def __init__(self, initname="Defaultaria", image=None, initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5):
+    def __init__(self, initname="Defaultaria", image=None, initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5, initgov = None):
         self._name = initname
         self._population = initpop
         self._tax = inittax
@@ -18,6 +18,7 @@ class Province:
         self._unrest = initunrest
         self._toltax = inittoltax
         self._img = image
+        self._government = initgov
         
         #Even for a temporary militia, roughly 25% are too young to fight, 10% are too old, and 15% are otherwise physically incapable
         self._fightpop = initpop * 0.60
@@ -43,6 +44,14 @@ class Province:
     def population(self):
         '''Returns the province's current population.'''
         return int(self._population)
+    
+    def government(self):
+        '''Returns the province's current government.'''
+        return self._government
+    
+    def setGovernment(self, new):
+        '''Changes the province's government.'''
+        self._government = new
     
     def changePopulation(self, amount):
         '''For -1 < x < 1, changes province population by that percent. For other numbers, changes by that raw number.'''
