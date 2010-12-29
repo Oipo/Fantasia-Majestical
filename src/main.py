@@ -15,6 +15,10 @@ class MainWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.timerTimeout)
         self.timer.start(13)
+        
+        self.monthTimer = QTimer()
+        self.monthTimer.timeout.connect(self.monthTimerTimeout)
+        self.monthTimer.start(2000)
 
         self.setCentralWidget(fmGlobals.glwidget)
         fmGlobals.glwidget.makeCurrent()
@@ -25,6 +29,9 @@ class MainWindow(QMainWindow):
 
     def timerTimeout(self):
         fmGlobals.glwidget.updateGL()
+        
+    def monthTimerTimeout(self):
+        fmGlobals.worldmap.advanceMonth()
 
 if __name__ == '__main__':
     app = QApplication(['Fantasia Majestical'])

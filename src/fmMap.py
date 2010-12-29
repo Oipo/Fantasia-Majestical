@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 #
 #fmMap - World map code
 #
 #By Doctus (kirikayuumura.noir@gmail.com)
 
-import fmProv
-import fmGlobals
+import fmProv, fmGlobals, fmPeople, fmGov, fmPlayer
 
 from PyQt4.QtGui import *
 
@@ -13,6 +12,7 @@ class WorldMap:
     
     def __init__(self):
         self._provinces = {}
+        self._month = 0
 
         for dat in [["oceantopleft", (0, 0), 'oceantopleft.png'], 
                     ["oceanbottomleft", (0, 1000), 'oceanbottomleft.png'],
@@ -32,6 +32,12 @@ class WorldMap:
                           "Southwestshire":("Southeastland", "Northwestia"),
                           "Northeastica":("Southeastland", "Northwestia"),
                           "Southeastland":("Southwestshire", "Northeastica")}
+        
+        #semi-debug stuff----
+        self._tmpsov = fmPeople.Character("Test Sovereign")
+        self._governments = {"Duchy of Northwestia":fmGov.Government(self, "Northwestia", self._tmpsov)}                  
+        self._players = {"Test Player":fmPlayer.Player(self, self._tmpsov, self._governments["Duchy of Northwestia"])}
+        #--------------------
                           
     def provinces(self):
         '''Returns a dict of all provinces on the map.'''
@@ -48,3 +54,16 @@ class WorldMap:
     def canMove(self, provinceone, provincetwo):
         '''Returns whether movement is possible from a first province to a second.'''
         return provincetwo in self._movement[provinceone]
+
+    def advanceMonth(self):
+        '''Advances the entire world one month of game time.'''
+        self._month += 1
+        for gov in self._governments.values():
+            gov.collectTax()
+            gov.collectProduction()
+        for prov in self._provinces.values():
+            prov.advanceMonth()
+        
+        print "Month " + str(self._month)
+        self._players["Test Player"].debugPrint()
+        self.province("Northwestia").debugPrint()
