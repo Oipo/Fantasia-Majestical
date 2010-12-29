@@ -17,7 +17,7 @@ class provinceListWidget(QListWidget):
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.panel = panel
 
-        fmGlobals.worldmap.updateSlot.connect(self.update)
+        fmGlobals.worldmap.updateSlot.connect(self.updateStats)
 
     def selectionChanged(self, selected, deselected):
         super(QListWidget, self).selectionChanged(selected, deselected)
@@ -27,7 +27,7 @@ class provinceListWidget(QListWidget):
 
             self.setStats(item)
 
-    def update(self):
+    def updateStats(self):
         for item in self.selectedItems():
             self.setStats(item)
 
