@@ -1,0 +1,17 @@
+$PROV { 
+$n Glimmer
+$f glimmer.png
+$x 103
+$y 126
+$pop 4000
+$goods 25
+}
+
+$PROV {
+$n Grail
+$f grail.png
+$x 310
+$y 490
+$pop 14000
+$goods 10
+}
