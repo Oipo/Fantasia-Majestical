@@ -44,6 +44,7 @@ $goods 5
 $s 15 Glimmer
 $s 2 Western Seneschals
 $s 2 Grail
+$s 3 Grail Coast
 }
 
 $PROV {
@@ -55,4 +56,17 @@ $pop 4000
 $goods 10
 $c 3 Grail
 $s 3 Western Seneschals
+$c 2 Grail Coast
+}
+
+$PROV {
+$n Grail Coast
+$f grail_coast.png
+$x 371
+$y 530
+$pop 5500
+$goods 12
+$c 3 Grail
+$c 2 Tolbank
+$s 3 Eastern Seneschals
 }
