@@ -3,7 +3,7 @@ $n Glimmer
 $f glimmer.png
 $x 103
 $y 126
-$pop 4000
+$pop 6000
 $goods 25
 }
 
@@ -14,4 +14,22 @@ $x 310
 $y 490
 $pop 14000
 $goods 10
+}
+
+$PROV {
+$n Western Seneschals
+$f west_eye.png
+$x 219
+$y 349
+$pop 2500
+$goods 5
+}
+
+$PROV {
+$n Eastern Seneschals
+$f east_eye.png
+$x 407
+$y 366
+$pop 1500
+$goods 5
 }
