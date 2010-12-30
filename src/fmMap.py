@@ -120,9 +120,5 @@ class WorldMap(QObject):
             gov.getGovernor().manageGovernment(gov)
         for prov in self._provinces.values():
             prov.advanceMonth()
-        
-        print "Month " + str(self._month)
-        self._players["Test Player"].debugPrint()
-        self.province("Northeastica").debugPrint()
 
         self.updateSlot.emit()
