@@ -16,11 +16,7 @@ class governProvinceDialog(QDialog):
         self.cancelButton.clicked.connect(self.cancelPressed)
 
         self.tax = QLineEdit(str(province.taxRate()))
-<<<<<<< HEAD
         self.tax.setValidator(QDoubleValidator(0, 100, 1, self))
-=======
-        self.tax.setValidator(QIntValidator(0, 100, self))
->>>>>>> b2790967b644d62c28a46930d0a05cbd4f4a9774
 
         x = 0
 
