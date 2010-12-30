@@ -1,3 +1,9 @@
+﻿# -*- coding: utf-8 -*-
+#
+#main - starting point of FM
+#
+#By Oipo (kingoipo@gmail.com)
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 

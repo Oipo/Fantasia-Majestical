@@ -1,3 +1,9 @@
+﻿# -*- coding: utf-8 -*-
+#
+#Image convenience class
+#
+#By Oipo (kingoipo@gmail.com)
+
 from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
 from OpenGL.arrays import ArrayDatatype as ADT

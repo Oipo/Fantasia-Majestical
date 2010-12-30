@@ -1,3 +1,9 @@
+﻿# -*- coding: utf-8 -*-
+#
+#glWidget - Takes care of drawing images, with optionally glmod to speed things up
+#
+#By Oipo (kingoipo@gmail.com)
+
 from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
 

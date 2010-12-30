@@ -54,6 +54,10 @@ class WorldMap(QObject):
     def movement(self, province):
         '''Returns possible targets of (land?) movement from a given province.'''
         return self._movement[province]
+
+    def getHumanPlayer(self):
+        '''Obviously this needs to be done properly.'''
+        return self._players["Test Player"]
     
     def canMove(self, provinceone, provincetwo):
         '''Returns whether movement is possible from a first province to a second.'''
