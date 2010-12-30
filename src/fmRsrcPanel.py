@@ -39,10 +39,14 @@ class governDialog(QDialog):
 
 class provinceItem(QListWidgetItem):
 
-    def __init__(self, province):
+    def __init__(self, province, panel):
         QListWidgetItem.__init__(self)
         self.province = province
-        self.setText(province.name())
+
+        if province.name() == panel.player.governedProvince():
+            self.setText(province.name() + " (Governed)")
+        else:
+            self.setText(province.name())
 
 class provinceListWidget(QListWidget):
 
@@ -136,7 +140,7 @@ class RsrcPanel(QDockWidget):
         provinces = fmGlobals.worldmap.provinces()
 
         for p in provinces.values():
-            self.provinceList.addItem(provinceItem(p))
+            self.provinceList.addItem(provinceItem(p, self))
 
         self.provinceList.setCurrentRow(0)
 
