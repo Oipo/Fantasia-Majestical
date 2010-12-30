@@ -4,7 +4,10 @@
 #
 #By Doctus (kirikayuumura.noir@gmail.com)
 
-import fmNameGen
+import fmNameGen, random
+
+def _rstat():
+    return min(100, max(0, random.gauss(50, 12)))
 
 class Relationship:
     
@@ -67,10 +70,30 @@ class Character:
         self._currentPersona = self._mainPersona
         self._alts = {self._name:self._mainPersona}
         self._relationships = {}
+        self._stats = {}
+        for stat in ["courage", "temperance", "fortitude", "compassion",
+                     "piety", "industriousness", "pride", "charm",
+                     "cleverness", "analysis", "intuition", "determination",
+                     "combat", "stealth", "etiquette", "refinement",
+                     "morality", "tolerance", "cooking", "constitution",
+                     "magic", "musicality", "administration", "perspicacity",
+                     "wheedling", "disguise", "strategy", "tactics",
+                     "history", "language", "accounting", "gravity",
+                     "greed", "irascibility", "introspection", "ambition",
+                     "curiousity", "cheerfulness", "humour", "foresight",
+                     "poisons", "lockpicking", "equestrian", "sociability",
+                     "crafting", "misdirection", "mining", "architecture",
+                     "lying", "lore", "gluttony", "patience", "wit",
+                     "narcissism", "leadership"]:
+                         self._stats[stat] = _rstat()
         
     def name(self):
         '''Returns the character's actual internal name.'''
         return self._name
+    
+    def stat(self, statname):
+        '''Returns the character's value in a given statistic.'''
+        return self._stats[statname]
     
     def hasPersona(self, name):
         '''Returns whether the passed name is one of the character's.'''

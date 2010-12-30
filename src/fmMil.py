@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 #
 #fmMil - Military stuff
 #
@@ -99,13 +99,13 @@ class Regiment:
     def drill(self):
         '''Gives the unit the benefits of one month of drilling.'''
         #Not yet fully implemented
-        self._training += (random.randint(0, 4)# +
-                            #self._commander.relevant_military_skill
+        self._training += (random.randint(0, 4) +
+                            self._commander.stat("leadership")/25
                             #self._province.relevant_bonuses
                             #self._other_misc_bonuses
                             )
-        self._morale += (random.randint(0, 4)# +
-                            #self._commander.relevant_military_skill
+        self._morale += (random.randint(0, 4) +
+                            self._commander.stat("leadership")/25
                             #self._province.relevant_bonuses
                             #self._other_misc_bonuses
                             )
