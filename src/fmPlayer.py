@@ -11,6 +11,23 @@ class Player:
         self._sovereign = sovereign
         self._gov = startinggov
         self._vassals = startingvassals
+
+        #debug
+        from fmMap import WorldMap
+        from fmPeople import Character
+        from fmGov import Government
+
+        if not isinstance(mappe, WorldMap):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+
+        if not isinstance(sovereign, Character):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+
+        if not isinstance(startinggov, Government):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
         
     def treasury(self):
         '''Returns the player's government's treasury.'''

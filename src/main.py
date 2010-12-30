@@ -1,6 +1,6 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
-#main - starting point of FM
+#main - starting point of FM （゜ω゜）ｂ
 #
 #By Oipo (kingoipo@gmail.com)
 

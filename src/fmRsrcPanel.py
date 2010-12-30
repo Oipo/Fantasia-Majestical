@@ -2,8 +2,9 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 import fmGlobals
+from fmGov import *
 
-class governDialog(QDialog):
+class governProvinceDialog(QDialog):
 
     def __init__(self, province):
         QDialog.__init__(self)
@@ -15,7 +16,7 @@ class governDialog(QDialog):
         self.cancelButton.clicked.connect(self.cancelPressed)
 
         self.tax = QLineEdit(str(province.taxRate()))
-        self.tax.setValidator(QIntValidator())
+        self.tax.setValidator(QDoubleValidator(0, 100, 1, self))
 
         x = 0
 
@@ -23,6 +24,57 @@ class governDialog(QDialog):
 
         grid.addWidget(QLabel("Tax Rate:"), x, 0)
         grid.addWidget(self.tax, x, 1)
+        x += 1
+
+        grid.addWidget(self.okButton, x, 0)
+        grid.addWidget(self.cancelButton, x, 1)
+        x += 1
+
+        self.setLayout(grid)
+
+        #debug
+        from fmProv import Province
+
+        if not isinstance(province, Province):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+
+    def okPressed(self, checked):
+        self.done(1)
+
+    def cancelPressed(self, checked):
+        self.done(0)
+
+class governGovernerDialog(QDialog):
+
+    def __init__(self, province):
+        QDialog.__init__(self)
+
+        self.okButton = QPushButton("Ok")
+        self.cancelButton = QPushButton("Cancel")
+
+        self.okButton.clicked.connect(self.okPressed)
+        self.cancelButton.clicked.connect(self.cancelPressed)
+
+        self.tax = QLineEdit(str(province.taxRate()))
+        self.tax.setValidator(QDoubleValidator(0, 100, 1, self))
+
+        descriptions = province.getUnrestDescList()
+        self.unrest = QComboBox()
+
+        for desc in descriptions:
+            self.unrest.addItem(desc)
+
+        x = 0
+
+        grid = QGridLayout()
+
+        grid.addWidget(QLabel("Tax Rate:"), x, 0)
+        grid.addWidget(self.tax, x, 1)
+        x += 1
+
+        grid.addWidget(QLabel("Unrest:"), x, 0)
+        grid.addWidget(self.unrest, x, 1)
         x += 1
 
         grid.addWidget(self.okButton, x, 0)
@@ -43,7 +95,7 @@ class provinceItem(QListWidgetItem):
         QListWidgetItem.__init__(self)
         self.province = province
 
-        if province.name() == panel.player.governedProvince():
+        if province == panel.player.governedProvince():
             self.setText(province.name() + " (Governed)")
         else:
             self.setText(province.name())
@@ -73,11 +125,6 @@ class provinceListWidget(QListWidget):
         p = item.province
         panel = self.panel
 
-        if p.name() == panel.player.governedProvince():
-            panel.govern.setEnabled(True)
-        else:
-            panel.govern.setEnabled(False)
-
         panel.population.setText(str(p.population()) + "(" + str(p.fightingPopulation()) + ")")
         panel.levy.setText(str(p.normalLevy()) + "(" + str(p.maxLevy()) + ")")
         panel.tax.setText(str(p.taxRate()) + "%")
@@ -101,7 +148,6 @@ class RsrcPanel(QDockWidget):
         self.unrest = QLabel("0")
 
         self.govern = QPushButton("Govern")
-        self.govern.setEnabled(False)
 
         self.govern.clicked.connect(self.governPressed)
 
@@ -140,6 +186,7 @@ class RsrcPanel(QDockWidget):
         provinces = fmGlobals.worldmap.provinces()
 
         for p in provinces.values():
+            #p.government().getLeader() == fmGlobals.worldmap.getHumanPlayer()
             self.provinceList.addItem(provinceItem(p, self))
 
         self.provinceList.setCurrentRow(0)
@@ -148,8 +195,23 @@ class RsrcPanel(QDockWidget):
         mainWindow.addDockWidget(Qt.RightDockWidgetArea, self)
 
     def governPressed(self, checked):
-        p = fmGlobals.worldmap.province(self.player.governedProvince())
-        d = governDialog(p)
-        if d.exec_():
-            p.setTaxRate(int(d.tax.text()))
-            self.provinceList.updateStats()
+        playerP = fmGlobals.worldmap.getCharacterProvince(self.player.sovereign())
+        selectedP = None
+
+        for item in self.provinceList.selectedItems():
+            selectedP = item.province
+
+        if selectedP == playerP:
+            d = governProvinceDialog(selectedP)
+            if d.exec_():
+                selectedP.setTaxRate(int(d.tax.text()))
+                self.provinceList.updateStats()
+        else:
+            d = governGovernerDialog(selectedP)
+            if d.exec_():
+                order = Order(str(d.tax.text()), str(d.unrest.currentText()))
+                origin = fmGlobals.worldmap.getCharacterProvince(fmGlobals.worldmap.getHumanPlayer().sovereign()).government()
+                target = selectedP.government()
+                request = OrderRequest(origin, target, order)
+                fmGlobals.worldmap.addOrderRequestToQueue(request)
+

@@ -28,6 +28,14 @@ class Province:
         
         #Something like 2% can be raised for an army without significant difficulty (this one is rather variable though)
         self._normallevy = initpop * 0.02
+
+        #debug
+        import sys
+        from image import Image
+
+        if image and not isinstance(image, Image):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
         
     def name(self):
         '''Returns the province's name.'''
@@ -108,7 +116,7 @@ class Province:
         self._maxlevy = min((self._maxlevy + self._population * 0.001), self._population * 0.06)
         self._normallevy = min((self._normallevy + self._population * 0.00033), self._population * 0.02)
         
-        if abs(self._tax - self._toltax) > 0.5:
+        if abs(self._tax - self._toltax) > 0.25:
             if self._tax > self._toltax:
                 self._toltax += 0.05
                 self._unrest += 0.25 + ((self._tax - self._toltax) * 0.25)
@@ -132,6 +140,10 @@ class Province:
         elif self._unrest <= 70:
             return "violent"
         return "rebellious"
+
+    def getUnrestDescList(self):
+        '''Returns a list of the possible decsriptors in lowercase.'''
+        return ["placid", "calm", "uneasy", "troubled", "violent", "rebellious"]
         
     def debugPrint(self):
         print "Data for Province " + self._name

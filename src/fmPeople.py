@@ -22,6 +22,17 @@ class Relationship:
             self._loyalty = loyalty
         else:
             self._loyalty = 50
+
+        #debug
+        import sys
+
+        if not isinstance(origin, Character):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+
+        if not isinstance(target, Character):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
         
     def origin(self):
         '''The source of the thoughts and feelings.'''
@@ -132,6 +143,19 @@ class Character:
     def getRelationship(self, name):
         '''Returns the relationship object matching the name provided.'''
         return self._relationships[name]
+
+    def manageGovernment(self, gov):
+        if gov.getGovernor() != self:
+            return
+
+        p = gov.province()
+
+        if p.getUnrestDescList().index(p.getUnrestDescriptor()) <= p.getUnrestDescList().index(gov.order().unrest.lower()):
+            if p.taxRate() < gov.order().tax:
+                p.changeTaxRate(0.4)
+            elif p.taxRate() > gov.order().tax:
+                p.changeTaxRate(-0.4)
+                
         
 class Persona:
     

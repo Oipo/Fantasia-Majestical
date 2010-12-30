@@ -17,6 +17,7 @@ class WorldMap(QObject):
         QObject.__init__(self)
         self._provinces = {}
         self._month = 0
+        self._orders = []
 
         for dat in [["oceantopleft", (0, 0), 'oceantopleft.png'], 
                     ["oceanbottomleft", (0, 1000), 'oceanbottomleft.png'],
@@ -39,7 +40,21 @@ class WorldMap(QObject):
 
         #semi-debug stuff----
         self._tmpsov = fmPeople.Character("Test Sovereign")
-        self._governments = {"Duchy of Northwestia":fmGov.Government(self, "Northwestia", self._tmpsov)}                  
+        self._AIsov = fmPeople.Character("AI Sovereign")
+        self._governments = {}
+
+        gov = fmGov.Government(self, self.province("Northwestia"), self._tmpsov, self._tmpsov)
+        self._governments["Duchy of Northwestia"] = gov
+
+        gov = fmGov.Government(self, self.province("Southwestshire"), self._tmpsov, self._AIsov)
+        self._governments["Duchy of Southwestshire"] = gov
+
+        gov = fmGov.Government(self, self.province("Northeastica"), self._tmpsov, self._AIsov)
+        self._governments["Duchy of Northeastica"] = gov
+
+        gov = fmGov.Government(self, self.province("Southeastland"), self._tmpsov, self._AIsov)
+        self._governments["Duchy of Southeastland"] = gov
+
         self._players = {"Test Player":fmPlayer.Player(self, self._tmpsov, self._governments["Duchy of Northwestia"])}
         #--------------------
                           
@@ -58,22 +73,56 @@ class WorldMap(QObject):
     def getHumanPlayer(self):
         '''Obviously this needs to be done properly.'''
         return self._players["Test Player"]
-    
+
+    def getPlayerProvinces(self, player):
+        '''Returns all provinces which directly or indirectly are owned by player'''
+        provinces = []
+
+        for province in self._provinces:
+            if province.getLeader() == player:
+                provinces.append(province)
+
+        return provinces
+
+    def getCharacterProvince(self, character):
+        '''Returns the province which is directly governed by character'''
+        for province in self._provinces.values():
+            gov = province.government()
+            if gov and gov.getGovernor() == character:
+                return province
+
     def canMove(self, provinceone, provincetwo):
         '''Returns whether movement is possible from a first province to a second.'''
         return provincetwo in self._movement[provinceone]
 
+    def addOrderRequestToQueue(self, order):
+        '''Add an order to the list of orders which are yet to arrive at their destination.
+           That is not to say that these could be corrupted, and their routes changed. No one knows!'''
+        self._orders.append(order)
+
     def advanceMonth(self):
         '''Advances the entire world one month of game time.'''
         self._month += 1
+
+        deletedOrders = []
+        for order in self._orders:
+            order.advanceMonth()
+            if order.done():
+                deletedOrders.append(order)
+
+        while len(deletedOrders) > 0:
+            self._orders.remove(deletedOrders.pop())
+
         for gov in self._governments.values():
             gov.collectTax()
             gov.collectProduction()
+
+            gov.getGovernor().manageGovernment(gov)
         for prov in self._provinces.values():
             prov.advanceMonth()
         
         print "Month " + str(self._month)
         self._players["Test Player"].debugPrint()
-        self.province("Northwestia").debugPrint()
+        self.province("Northeastica").debugPrint()
 
         self.updateSlot.emit()
