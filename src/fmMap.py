@@ -71,9 +71,5 @@ class WorldMap(QObject):
             gov.collectProduction()
         for prov in self._provinces.values():
             prov.advanceMonth()
-        
-        print "Month " + str(self._month)
-        self._players["Test Player"].debugPrint()
-        self.province("Northwestia").debugPrint()
 
         self.updateSlot.emit()

@@ -114,7 +114,7 @@ class Province:
                 self._unrest += 0.25 + ((self._tax - self._toltax) * 0.25)
             elif self._tax < self._toltax:
                 self._toltax -= 0.1
-                self._unrest -= 0.125 + ((self._tax - self._toltax) * 0.125)
+                self._unrest -= 0.125 + ((self._toltax - self._tax) * 0.125)
         else:
             self._toltax = self._tax
             if self._unrest > 10: self._unrest -= 0.1
