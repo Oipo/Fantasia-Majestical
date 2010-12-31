@@ -18,15 +18,15 @@ class WorldMap:
                     ["oceanbottomleft", (0, 1000), 'oceanbottomleft.png'],
                     ["oceanbottomright", (1000, 1000), 'oceanbottomright.png'],
                     ["oceantopright", (1000, 0), 'oceantopright.png']]:
-            qimg = QImage('data/' + dat[2])
-            img = fmGlobals.glwidget.createImage(qimg, -2, (0, 0, qimg.width(), qimg.height()), (dat[1][0], dat[1][1], qimg.width(), qimg.height()))
+            qimg = 'data/' + dat[2]
+            img = fmGlobals.glwidget.createImage(qimg, -2, (0, 0, 1000, 1000), (dat[1][0], dat[1][1], 1000, 1000))
 
         for dat in [["Northwestia", (0, 0), 'landtopleft.png'], 
                     ["Southeastland", (0, 1000), 'landbottomleft.png'],
                     ["Southwestshire", (1000, 1000), 'landbottomright.png'],
                     ["Northeastica", (1000, 0), 'landtopright.png']]:
-            qimg = QImage('data/' + dat[2])
-            img = fmGlobals.glwidget.createImage(qimg, -1, (0, 0, qimg.width(), qimg.height()), (dat[1][0], dat[1][1], qimg.width(), qimg.height()))
+            qimg = 'data/' + dat[2]
+            img = fmGlobals.glwidget.createImage(qimg, -1, (0, 0, 1000, 1000), (dat[1][0], dat[1][1], 1000, 1000))
             self._provinces[dat[0]] = fmProv.Province(dat[0], img)
         self._movement = {"Northwestia":("Southwestshire", "Northeastica"),
                           "Southwestshire":("Southeastland", "Northwestia"),

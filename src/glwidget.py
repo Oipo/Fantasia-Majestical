@@ -30,12 +30,11 @@ class GLWidget(QGLWidget):
         self.camera = [0, 0]
         self.layers = []
         self.zoom = 1
-        self.VBOVertices = None
-        self.VBOTexCoords = None
+        self.VBO = None
         self.VBOBuffer = 0
-        self.offsetv = 0
-        self.offsett = 0
+        self.offset = 0
         self.vbolist = []
+        self.qimages = {}
 
     #GL functions
     def paintGL(self):
@@ -50,14 +49,7 @@ class GLWidget(QGLWidget):
         glScaled(self.zoom, self.zoom, 0)
 
         if fmGlobals.vbos:
-            for layer in self.layers:
-                for img in self.images[layer]:
-                    self.vbolist.append(img.textureId)
-                    self.vbolist.append(img.VBOTexCoords)
-                    self.vbolist.append(img.VBOVertices)
-            glmod.drawVBO(tuple(self.vbolist))
-
-            #glmod.drawVBO2(tuple(self.vbolist))
+            glmod.drawVBO()
         else:
             for layer in self.layers:
                 for img in self.images[layer]:
@@ -93,39 +85,49 @@ class GLWidget(QGLWidget):
         if mod and not glInitVertexBufferObjectARB():
             fmGlobals.vbos = True
             print "using VBOs"
-            self.VBOVertices = int(glGenBuffersARB(1))
-            self.VBOTexCoords = int(glGenBuffersARB(1))
+            self.VBO = int(glGenBuffersARB(1))
 
-        qimg = QImage("test.png")
-        for x in range(20):
-            for y in range(20):
-                self.createImage(qimg, 1, (0, 0, 63, 63), (x*16, y*16, 16, 16))
+        qimg = "test.png"
+        for l in range(2):
+            for x in range(40):
+                for y in range(40):
+                    self.createImage(qimg, l, ((x+l) % 32, 0, 63, 63), (x*16, y*16, 16, 16))
 
     #util functions
-    def createImage(self, qimage, layer, textureRect, drawRect, dynamicity = GL_STATIC_DRAW_ARB):
+    def createImage(self, qimagepath, layer, textureRect, drawRect, dynamicity = GL_STATIC_DRAW_ARB):
         '''
         image is from image.py
         texture is an int, pointing to the correct location in VRAM
         '''
 
-        image = Image(qimage, textureRect, drawRect, dynamicity)
+        image = Image(qimagepath, textureRect, drawRect, dynamicity)
 
-        img = self.convertToGLFormat(image.image)
-        texture = glGenTextures(1)
-        imgdata = img.bits().asstring(img.numBytes())
+        texture = None
+        found = False
 
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture)
+        for qimgpath in self.qimages:
+            if qimgpath == qimagepath:
+                texture = self.qimages[qimgpath][0]
+                found = True
 
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        if found == False:
+            qimg = QImage(qimagepath)
+            img = self.convertToGLFormat(qimg)
+            texture = glGenTextures(1)
+            imgdata = img.bits().asstring(img.numBytes())
 
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
+            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture)
+
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
+
+            self.qimages[qimagepath] = [texture, 1] #texture, reference count
+        else:
+            self.qimages[qimagepath][1] += 1
 
         image.textureId = texture
-
-        if fmGlobals.vbos:
-            #image.buildVBO()
-            pass
 
         if layer not in self.images:
             self.images[layer] = []
@@ -135,79 +137,69 @@ class GLWidget(QGLWidget):
         self.images[layer].append(image)
 
         if fmGlobals.vbos:
-            '''self.fillBuffers(image)
-            self.vbolist = [self.VBOTexCoords, self.VBOVertices]
-            for layer in self.layers:
-                for img in self.images[layer]:#leave it here, removing it increases CPU consumption against expectations
-                    self.vbolist.append(img.textureId)'''
-            image.buildVBO()
+            image.VBO = self.VBO
 
+            self.fillBuffers(image)
+            self.qimages[qimagepath].append(image.offset)
+
+            self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
+            for layer in self.layers:
+                for img in self.images[layer]:
+                    self.vbolist.append(img.textureId)
+                    self.vbolist.append(img.offset)
+            glmod.setVBO(tuple(self.vbolist))
 
         return image
 
     def fillBuffers(self, image = None):
         size = 0
-        vertByteCount = texByteCount = 0
+        vertByteCount = ADT.arrayByteCount(numpy.zeros((8, 2), 'f'))
 
         for layer in self.layers:
             size += len(self.images[layer])
-            vertByteCount = ADT.arrayByteCount(self.images[layer][0].Vertices)
-            texByteCount = ADT.arrayByteCount(self.images[layer][0].TexCoords)
 
-        print vertByteCount, texByteCount, size
-        print self.VBOBuffer
+        glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBO)
 
         if self.VBOBuffer <= size or image == None:
-
             self.VBOBuffer = glmod.nextPowerOfTwo(size)
 
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
             glBufferData(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*vertByteCount, None, GL_STATIC_DRAW_ARB)
 
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
-            glBufferData(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*texByteCount, None, GL_STATIC_DRAW_ARB)
+            self.offset = 0
 
-        self.offsetv = self.offsett = 0
+            for layer in self.layers:
+                for img in self.images[layer]:
+                    img.offset = int(float(self.offset)/vertByteCount*4)
+                    VBOData = img.getVBOData()
 
-        for layer in self.layers:
-            for img in self.images[layer]:
-                img.offsetv = self.offsetv
-                img.offsett = self.offsett
+                    glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, ADT.arrayByteCount(VBOData), VBOData)
+                    self.offset += ADT.arrayByteCount(VBOData)
 
-                glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
-                glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsetv, ADT.arrayByteCount(img.Vertices), img.Vertices)
+        else:
+            image.offset = int(float(self.offset)/vertByteCount*4)
+            VBOData = image.getVBOData()
 
-                glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
-                glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsett, ADT.arrayByteCount(img.TexCoords), img.TexCoords)
-
-                self.offsetv += ADT.arrayByteCount(img.Vertices)
-                self.offsett += ADT.arrayByteCount(img.TexCoords)
-
-        '''else:
-            image.offsetv = self.offsetv
-            image.offsett = self.offsett
-
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOVertices)
-            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsetv, ADT.arrayByteCount(image.Vertices), image.Vertices)
-
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBOTexCoords)
-            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offsett, ADT.arrayByteCount(image.TexCoords), image.TexCoords)
-
-            self.offsetv += ADT.arrayByteCount(image.Vertices)
-            self.offsett += ADT.arrayByteCount(image.TexCoords)'''
-
-
+            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, ADT.arrayByteCount(VBOData), VBOData)
+            self.offset += ADT.arrayByteCount(VBOData)
 
     def deleteImage(self, image):
         '''
         textures can be a list, but doesn't have to be.
         '''
 
-        glDeleteTextures(image.textureId)
+        self.qimages[image.imagepath][1] -= 1
+
+        if self.qimages[image.imagepath][1] <= 0:
+            glDeleteTextures(image.textureId)
+
+        self.images[image.layer].remove(image)
 
         if fmGlobals.vbos:
-            glDeleteBuffers(image.VBOVertices)
-            glDeleteBuffers(image.VBOTexCoords)
+            for layer in self.layers:
+                for img in self.images[layer]:
+                    self.vbolist.append(img.textureId)
+                    self.vbolist.append(img.offset)
+            glmod.setVBO(tuple(self.vbolist))
 
     def drawImage(self, image):
         if mod:
