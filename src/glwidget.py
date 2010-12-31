@@ -75,6 +75,7 @@ class GLWidget(QGLWidget):
         glLoadIdentity()
         glOrtho(0, w, h, 0, -1, 1)
         glMatrixMode(GL_MODELVIEW)
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST) 
 
     def initializeGL(self):
         '''
@@ -87,6 +88,7 @@ class GLWidget(QGLWidget):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glViewport(0, 0, self.width(), self.height())
         glClearColor(0.0, 0.0, 0.0, 0.0)
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
 
         if mod and glInitVertexBufferObjectARB():
             fmGlobals.vbos = True
