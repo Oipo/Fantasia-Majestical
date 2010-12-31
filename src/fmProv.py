@@ -8,7 +8,7 @@ import random
 
 class Province:
     
-    def __init__(self, initname="Defaultaria", image=None, initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5, initgov = None):
+    def __init__(self, initname="Defaultaria", image=None, initpop=1000, inittax=5, initgoods=20, initunrest = 5, inittoltax = 5, initgov = None, imageoffset=(0, 0), landroutes = [], searoutes = []):
         self._name = initname
         self._population = initpop
         self._tax = inittax
@@ -18,7 +18,10 @@ class Province:
         self._unrest = initunrest
         self._toltax = inittoltax
         self._img = image
+        self._displayloc = imageoffset
         self._government = initgov
+        self._land = landroutes
+        self._sea = searoutes
         
         #Even for a temporary militia, roughly 25% are too young to fight, 10% are too old, and 15% are otherwise physically incapable
         self._fightpop = initpop * 0.60
@@ -30,12 +33,12 @@ class Province:
         self._normallevy = initpop * 0.02
 
         #debug
-        import sys
-        from image import Image
+        #import sys
+        #from image import Image
 
-        if image and not isinstance(image, Image):
-            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
-            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+        #if image and not isinstance(image, Image):
+        #    f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+        #    print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
         
     def name(self):
         '''Returns the province's name.'''
@@ -44,6 +47,14 @@ class Province:
     def displayOffset(self):
         '''Returns the x, y coordinates of the province's image.'''
         return self._displayloc
+    
+    def landConnections(self):
+        '''Returns a list of the province's land connections and their distances.'''
+        return self._land
+    
+    def seaConnections(self):
+        '''Returns a list of the province's sea connections and their distances.'''
+        return self._sea
     
     def image(self):
         '''Returns the filename of the province's map image.'''

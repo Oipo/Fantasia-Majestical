@@ -32,32 +32,76 @@ class WorldMap(QObject):
                     ["Northeastica", (1000, 0), 'landtopright.png']]:
             qimg = 'data/' + dat[2]
             img = fmGlobals.glwidget.createImage(qimg, -1, (0, 0, 1000, 1000), (dat[1][0], dat[1][1], 1000, 1000))
-            self._provinces[dat[0]] = fmProv.Province(dat[0], img)
-        self._movement = {"Northwestia":("Southwestshire", "Northeastica"),
-                          "Southwestshire":("Southeastland", "Northwestia"),
-                          "Northeastica":("Southeastland", "Northwestia"),
-                          "Southeastland":("Southwestshire", "Northeastica")}
+            self.loadFromFile("province_data.txt")
+            #self._provinces[dat[0]] = fmProv.Province(dat[0], img)
+        #self._movement = {"Northwestia":("Southwestshire", "Northeastica"),
+        #                  "Southwestshire":("Southeastland", "Northwestia"),
+        #                  "Northeastica":("Southeastland", "Northwestia"),
+        #                  "Southeastland":("Southwestshire", "Northeastica")}
 
         #semi-debug stuff----
         self._tmpsov = fmPeople.Character("Test Sovereign")
         self._AIsov = fmPeople.Character("AI Sovereign")
         self._governments = {}
 
-        gov = fmGov.Government(self, self.province("Northwestia"), self._tmpsov, self._tmpsov)
-        self._governments["Duchy of Northwestia"] = gov
+        gov = fmGov.Government(self, self.province("Grail"), self._tmpsov, self._tmpsov)
+        self._governments["Empire of Grail"] = gov
 
-        gov = fmGov.Government(self, self.province("Southwestshire"), self._tmpsov, self._AIsov)
-        self._governments["Duchy of Southwestshire"] = gov
+        gov = fmGov.Government(self, self.province("Glimmer"), self._tmpsov, self._AIsov)
+        self._governments["Duchy of Glimmer"] = gov
 
-        gov = fmGov.Government(self, self.province("Northeastica"), self._tmpsov, self._AIsov)
-        self._governments["Duchy of Northeastica"] = gov
+        gov = fmGov.Government(self, self.province("Western Seneschals"), self._tmpsov, self._AIsov)
+        self._governments["Barony of Western Seneschals"] = gov
 
-        gov = fmGov.Government(self, self.province("Southeastland"), self._tmpsov, self._AIsov)
-        self._governments["Duchy of Southeastland"] = gov
+        gov = fmGov.Government(self, self.province("Eastern Seneschals"), self._tmpsov, self._AIsov)
+        self._governments["Barony of Eastern Seneschals"] = gov
+        
+        gov = fmGov.Government(self, self.province("Grail Coast"), self._tmpsov, self._AIsov)
+        self._governments["Barony of Grail Coast"] = gov
+        
+        gov = fmGov.Government(self, self.province("Tolbank"), self._tmpsov, self._AIsov)
+        self._governments["Duchy of Tolbank"] = gov
 
-        self._players = {"Test Player":fmPlayer.Player(self, self._tmpsov, self._governments["Duchy of Northwestia"])}
+        self._players = {"Test Player":fmPlayer.Player(self, self._tmpsov, self._governments["Empire of Grail"])}
+        
+        
         #--------------------
-                          
+        
+    def loadFromFile(self, filename):
+        '''Dubiously loads provinces from a province file.'''
+        with open(filename) as f:
+            provs = f.read().split("PROV")
+            for prov in provs:
+                try:
+                    dat = prov.split("\n")
+                    extracted = {"land":[], "sea":[]}
+                    for line in dat:
+                        if "$n" in line:
+                            extracted["name"] = line[3:]
+                        elif "$f" in line:
+                            extracted["img"] = line[3:]
+                        elif "$x" in line:
+                            extracted["x"] = int(line[3:])
+                        elif "$y" in line:
+                            extracted["y"] = int(line[3:])
+                        elif "$p" in line:
+                            extracted["pop"] = int(line[3:])
+                        elif "$g" in line:
+                            extracted["goods"] = int(line[3:])
+                        elif "$c" in line:
+                            extracted["land"].append([int(line[3]), line[5:]])
+                        elif "$s" in line:
+                            extracted["sea"].append([int(line[3]), line[5:]])
+                    self._provinces[extracted["name"]] = fmProv.Province(initname = extracted["name"], 
+                                                                         image = extracted["img"],
+                                                                         initpop = extracted["pop"],
+                                                                         imageoffset = (extracted["x"], extracted["y"]),
+                                                                         initgoods = extracted["goods"],
+                                                                         landroutes = extracted["land"],
+                                                                         searoutes = extracted["sea"])
+                except:
+                    pass
+            
     def provinces(self):
         '''Returns a dict of all provinces on the map.'''
         return self._provinces
@@ -66,9 +110,9 @@ class WorldMap(QObject):
         '''Returns the province with the given name.'''
         return self._provinces[name]
     
-    def movement(self, province):
-        '''Returns possible targets of (land?) movement from a given province.'''
-        return self._movement[province]
+    #def movement(self, province):
+    #    '''Returns possible targets of (land?) movement from a given province.'''
+    #    return self._movement[province]
 
     def getHumanPlayer(self):
         '''Obviously this needs to be done properly.'''

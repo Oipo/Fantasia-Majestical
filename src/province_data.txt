@@ -3,8 +3,8 @@ $n Glimmer
 $f glimmer.png
 $x 103
 $y 126
-$pop 6000
-$goods 25
+$p 6000
+$g 25
 $s 15 Western Seneschals
 $s 17 Eastern Seneschals
 }
@@ -14,8 +14,8 @@ $n Grail
 $f grail.png
 $x 310
 $y 490
-$pop 14000
-$goods 10
+$p 14000
+$g 10
 $s 3 Western Seneschals
 $s 2 Eastern Seneschals
 $c 3 Tolbank
@@ -26,8 +26,8 @@ $n Western Seneschals
 $f west_eye.png
 $x 219
 $y 349
-$pop 2500
-$goods 5
+$p 2500
+$g 5
 $s 15 Glimmer
 $s 2 Eastern Seneschals
 $s 3 Grail
@@ -39,8 +39,8 @@ $n Eastern Seneschals
 $f east_eye.png
 $x 407
 $y 366
-$pop 1500
-$goods 5
+$p 1500
+$g 5
 $s 15 Glimmer
 $s 2 Western Seneschals
 $s 2 Grail
@@ -52,8 +52,8 @@ $n Tolbank
 $f tolbank.png
 $x 289
 $y 541
-$pop 4000
-$goods 10
+$p 4000
+$g 10
 $c 3 Grail
 $s 3 Western Seneschals
 $c 2 Grail Coast
@@ -64,8 +64,8 @@ $n Grail Coast
 $f grail_coast.png
 $x 371
 $y 530
-$pop 5500
-$goods 12
+$p 5500
+$g 12
 $c 3 Grail
 $c 2 Tolbank
 $s 3 Eastern Seneschals
