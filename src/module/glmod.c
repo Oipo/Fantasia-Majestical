@@ -133,7 +133,7 @@ static PyObject * glmod_init(PyObject *self, PyObject* args)
     texid = NULL;
     offsets = NULL;
     return PyInt_FromLong(0L);
-    PFNGLBINDBUFFERPROC glBindBuffer = (PFNGLBINDBUFFERARBPROC)wglGetProcAddress("glBindBuffer");
+    glBindBuffer = (PFNGLBINDBUFFERARBPROC)wglGetProcAddress("glBindBuffer");
 }
 
 static PyObject * glmod_clear(PyObject *self, PyObject* args)
