@@ -91,6 +91,7 @@ class GLWidget(QGLWidget):
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
 
         if mod and not glInitVertexBufferObjectARB():
+            glmod.init()
             fmGlobals.vbos = True
             print "using VBOs"
             self.VBO = int(glGenBuffersARB(1))
