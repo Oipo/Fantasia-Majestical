@@ -1,3 +1,9 @@
+﻿# -*- coding: utf-8 -*-
+#
+#glWidget - Takes care of drawing images, with optionally glmod to speed things up
+#
+#By Oipo (kingoipo@gmail.com)
+
 from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
 from OpenGL.arrays import ArrayDatatype as ADT
@@ -45,8 +51,8 @@ class GLWidget(QGLWidget):
         glClear(GL_COLOR_BUFFER_BIT)
 
         glPushMatrix()
-        glTranslatef(self.camera[0], self.camera[1], 1)
-        glScaled(self.zoom, self.zoom, 0)
+        glTranslatef(self.camera[0], self.camera[1], 0)
+        glScaled(self.zoom, self.zoom, 1)
 
         if fmGlobals.vbos:
             glmod.drawVBO()
@@ -55,8 +61,8 @@ class GLWidget(QGLWidget):
                 for img in self.images[layer]:
                     self.drawImage(img)
 
-        glScaled(1/self.zoom, 1/self.zoom, 0)
-        glTranslatef(-self.camera[0], -self.camera[1], 1)
+        glScaled(1/self.zoom, 1/self.zoom, 1)
+        glTranslatef(-self.camera[0], -self.camera[1], 0)
         glPopMatrix()
 
     def resizeGL(self, w, h):
@@ -69,6 +75,7 @@ class GLWidget(QGLWidget):
         glLoadIdentity()
         glOrtho(0, w, h, 0, -1, 1)
         glMatrixMode(GL_MODELVIEW)
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST) 
 
     def initializeGL(self):
         '''            self.VBOTexCoords = int(glGenBuffersARB(1))
@@ -81,6 +88,7 @@ class GLWidget(QGLWidget):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glViewport(0, 0, self.width(), self.height())
         glClearColor(0.0, 0.0, 0.0, 0.0)
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
 
         if mod and not glInitVertexBufferObjectARB():
             fmGlobals.vbos = True
@@ -222,9 +230,6 @@ class GLWidget(QGLWidget):
         x, y, w, h = textureRect
         dx, dy, dw, dh = drawRect
 
-        x += self.camera[0]
-        y += self.camera[1]
-
         glBegin(GL_QUADS);
         #Top-left vertex (corner)
         glTexCoord2i(x, y+h); #image/texture
@@ -256,15 +261,26 @@ class GLWidget(QGLWidget):
         mouse.accept()
 
     def wheelEvent(self, mouse):
+        oldCoord = [mouse.pos().x(), mouse.pos().y()]
+        oldCoord[0] *= float(1)/self.zoom
+        oldCoord[1] *= float(1)/self.zoom
+
+        oldCoord2 = self.camera
+        oldCoord2[0] *= float(1)/self.zoom
+        oldCoord2[1] *= float(1)/self.zoom
+
         if mouse.delta() < 0:
-            self.zoom -= 0.10
+            self.zoom -= 0.15
         elif mouse.delta() > 0:
-            self.zoom += 0.10
+            self.zoom += 0.15
 
         if self.zoom < 0.30:
             self.zoom = 0.30
         elif self.zoom > 4:
             self.zoom = 4
+
+        self.camera[0] = oldCoord2[0] * self.zoom - ((oldCoord[0]*self.zoom)-mouse.pos().x())
+        self.camera[1] = oldCoord2[1] * self.zoom - ((oldCoord[1]*self.zoom)-mouse.pos().y())
 
         mouse.accept()
 

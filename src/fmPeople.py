@@ -4,7 +4,10 @@
 #
 #By Doctus (kirikayuumura.noir@gmail.com)
 
-import fmNameGen
+import fmNameGen, random
+
+def _rstat():
+    return min(100, max(0, random.gauss(50, 12)))
 
 class Relationship:
     
@@ -19,6 +22,17 @@ class Relationship:
             self._loyalty = loyalty
         else:
             self._loyalty = 50
+
+        #debug
+        import sys
+
+        if not isinstance(origin, Character):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+
+        if not isinstance(target, Character):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
         
     def origin(self):
         '''The source of the thoughts and feelings.'''
@@ -67,10 +81,30 @@ class Character:
         self._currentPersona = self._mainPersona
         self._alts = {self._name:self._mainPersona}
         self._relationships = {}
+        self._stats = {}
+        for stat in ["courage", "temperance", "fortitude", "compassion",
+                     "piety", "industriousness", "pride", "charm",
+                     "cleverness", "analysis", "intuition", "determination",
+                     "combat", "stealth", "etiquette", "refinement",
+                     "morality", "tolerance", "cooking", "constitution",
+                     "magic", "musicality", "administration", "perspicacity",
+                     "wheedling", "disguise", "strategy", "tactics",
+                     "history", "language", "accounting", "gravity",
+                     "greed", "irascibility", "introspection", "ambition",
+                     "curiousity", "cheerfulness", "humour", "foresight",
+                     "poisons", "lockpicking", "equestrian", "sociability",
+                     "crafting", "misdirection", "mining", "architecture",
+                     "lying", "lore", "gluttony", "patience", "wit",
+                     "narcissism", "leadership"]:
+                         self._stats[stat] = _rstat()
         
     def name(self):
         '''Returns the character's actual internal name.'''
         return self._name
+    
+    def stat(self, statname):
+        '''Returns the character's value in a given statistic.'''
+        return self._stats[statname]
     
     def hasPersona(self, name):
         '''Returns whether the passed name is one of the character's.'''
@@ -109,6 +143,19 @@ class Character:
     def getRelationship(self, name):
         '''Returns the relationship object matching the name provided.'''
         return self._relationships[name]
+
+    def manageGovernment(self, gov):
+        if gov.getGovernor() != self:
+            return
+
+        p = gov.province()
+
+        if p.getUnrestDescList().index(p.getUnrestDescriptor()) <= p.getUnrestDescList().index(gov.order().unrest.lower()):
+            if p.taxRate() < gov.order().tax:
+                p.changeTaxRate(0.4)
+            elif p.taxRate() > gov.order().tax:
+                p.changeTaxRate(-0.4)
+                
         
 class Persona:
     

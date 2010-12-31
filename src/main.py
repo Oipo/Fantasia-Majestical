@@ -1,30 +1,48 @@
+# -*- coding: utf-8 -*-
+#
+#main - starting point of FM （゜ω゜）ｂ
+#
+#By Oipo (kingoipo@gmail.com)
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from glwidget import *
 from fmMap import *
+from fmRsrcPanel import *
 import fmGlobals
 
 class MainWindow(QMainWindow):
-    ''' Example class for using SpiralWidget'''
-    
+    '''Wrapper class for...well, the game? Maybe this needs to be called the game engine then'''
+
     def __init__(self):
+        '''
+        Only initialize critical components(like opengl) here, use start() for anything else
+        '''
         QMainWindow.__init__(self)
-        fmGlobals.glwidget = GLWidget(self)   
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.timerTimeout)
-        self.timer.start(13)
-
+        fmGlobals.glwidget = GLWidget(self)
         self.setCentralWidget(fmGlobals.glwidget)
-        fmGlobals.glwidget.makeCurrent()
+        fmGlobals.glwidget.makeCurrent() 
+
+        self.drawTimer = QTimer()
+        self.drawTimer.timeout.connect(self.drawTimerTimeout)
+        self.drawTimer.start(13)
+        
+        self.monthTimer = QTimer()
+        self.monthTimer.timeout.connect(self.monthTimerTimeout)
+        self.monthTimer.start(2000)
 
     def start(self):
+        fmGlobals.worldmap = WorldMap()
 
-        fmGlobals.worldmap = WorldMap() 
+        self.rsrcPanel = RsrcPanel(self)
 
-    def timerTimeout(self):
+    def drawTimerTimeout(self):
         fmGlobals.glwidget.updateGL()
+        
+    def monthTimerTimeout(self):
+        fmGlobals.worldmap.advanceMonth()
 
 if __name__ == '__main__':
     app = QApplication(['Fantasia Majestical'])
