@@ -5,6 +5,8 @@ $x 103
 $y 126
 $pop 6000
 $goods 25
+$s 15 Western Seneschals
+$s 17 Eastern Seneschals
 }
 
 $PROV {
@@ -14,6 +16,9 @@ $x 310
 $y 490
 $pop 14000
 $goods 10
+$s 3 Western Seneschals
+$s 2 Eastern Seneschals
+$c 3 Tolbank
 }
 
 $PROV {
@@ -23,6 +28,10 @@ $x 219
 $y 349
 $pop 2500
 $goods 5
+$s 15 Glimmer
+$s 2 Eastern Seneschals
+$s 3 Grail
+$s 3 Tolbank
 }
 
 $PROV {
@@ -32,4 +41,32 @@ $x 407
 $y 366
 $pop 1500
 $goods 5
+$s 15 Glimmer
+$s 2 Western Seneschals
+$s 2 Grail
+$s 3 Grail Coast
+}
+
+$PROV {
+$n Tolbank
+$f tolbank.png
+$x 289
+$y 541
+$pop 4000
+$goods 10
+$c 3 Grail
+$s 3 Western Seneschals
+$c 2 Grail Coast
+}
+
+$PROV {
+$n Grail Coast
+$f grail_coast.png
+$x 371
+$y 530
+$pop 5500
+$goods 12
+$c 3 Grail
+$c 2 Tolbank
+$s 3 Eastern Seneschals
 }
