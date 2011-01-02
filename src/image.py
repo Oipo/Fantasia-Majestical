@@ -25,6 +25,17 @@ class Image:
         self.textureId = None
         self.offset = None
         self.VBO = None
+        self._hidden = False
+
+    @property
+    def hidden(self):
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, hidden):
+        if(self._hidden != hidden):
+            self._hidden = hidden
+            fmGlobals.glwidget.hideImage(self, hidden)
 
     def setDrawRect(self, drawRect):
         self.drawRect = drawRect

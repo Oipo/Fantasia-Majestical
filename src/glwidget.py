@@ -8,6 +8,7 @@ from OpenGL.GL import *
 from OpenGL.GL.ARB.vertex_buffer_object import *
 from OpenGL.arrays import ArrayDatatype as ADT
 
+from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtOpenGL import *
 
@@ -26,6 +27,8 @@ class GLWidget(QGLWidget):
     '''
     Widget for drawing everything, and for catching mouse presses and similar
     '''
+
+    mousePress = pyqtSignal(int, int, int) #button, x, y
     
     def __init__(self, parent):
         QGLWidget.__init__(self, parent)
@@ -78,7 +81,7 @@ class GLWidget(QGLWidget):
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST) 
 
     def initializeGL(self):
-        '''            self.VBOTexCoords = int(glGenBuffersARB(1))
+        '''
         Initialize GL
         '''
 
@@ -96,18 +99,33 @@ class GLWidget(QGLWidget):
             print "using VBOs"
             self.VBO = int(glGenBuffersARB(1))
 
-        qimg = "test.png"
-        for l in range(2):
-            for x in range(40):
-                for y in range(40):
-                    self.createImage(qimg, l, ((x+l) % 32, 0, 63, 63), (x*16, y*16, 16, 16))
-
     #util functions
     def createImage(self, qimagepath, layer, textureRect, drawRect, dynamicity = GL_STATIC_DRAW_ARB):
         '''
-        image is from image.py
-        texture is an int, pointing to the correct location in VRAM
+        FILL IN LATER PLOX
         '''
+
+        qimg = None
+
+        if textureRect[2] == -1:
+            if qimg == None:
+                qimg = QImage(qimagepath)
+            textureRect[2] = qimg.width()
+
+        if textureRect[3] == -1:
+            if qimg == None:
+                qimg = QImage(qimagepath)
+            textureRect[3] = qimg.height()
+
+        if drawRect[2] == -1:
+            if qimg == None:
+                qimg = QImage(qimagepath)
+            drawRect[2] = qimg.width()
+
+        if drawRect[3] == -1:
+            if qimg == None:
+                qimg = QImage(qimagepath)
+            drawRect[3] = qimg.height()
 
         image = Image(qimagepath, textureRect, drawRect, dynamicity)
 
@@ -120,7 +138,8 @@ class GLWidget(QGLWidget):
                 found = True
 
         if found == False:
-            qimg = QImage(qimagepath)
+            if qimg == None:
+                qimg = QImage(qimagepath)
             img = self.convertToGLFormat(qimg)
             texture = glGenTextures(1)
             imgdata = img.bits().asstring(img.numBytes())
@@ -152,15 +171,14 @@ class GLWidget(QGLWidget):
             self.qimages[qimagepath].append(image.offset)
 
             self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
-            for layer in self.layers:
-                for img in self.images[layer]:
-                    self.vbolist.append(img.textureId)
-                    self.vbolist.append(img.offset)
-            glmod.setVBO(tuple(self.vbolist))
+            self.calculateVBOList()
 
         return image
 
     def fillBuffers(self, image = None):
+        '''
+        ALSO FILL IN LATER...PLOX
+        '''
         size = 0
         vertByteCount = ADT.arrayByteCount(numpy.zeros((8, 2), 'f'))
 
@@ -193,7 +211,7 @@ class GLWidget(QGLWidget):
 
     def deleteImage(self, image):
         '''
-        textures can be a list, but doesn't have to be.
+        INACCURATE. IGNORE THIS COMMENT.
         '''
 
         self.qimages[image.imagepath][1] -= 1
@@ -204,13 +222,12 @@ class GLWidget(QGLWidget):
         self.images[image.layer].remove(image)
 
         if fmGlobals.vbos:
-            for layer in self.layers:
-                for img in self.images[layer]:
-                    self.vbolist.append(img.textureId)
-                    self.vbolist.append(img.offset)
-            glmod.setVBO(tuple(self.vbolist))
+            self.calculateVBOList()
 
     def drawImage(self, image):
+        if image.hidden:
+            return
+
         if mod:
             x, y, w, h = image.textureRect
             dx, dy, dw, dh = image.drawRect
@@ -259,6 +276,17 @@ class GLWidget(QGLWidget):
     def mousePressEvent(self, mouse):
         self.lastMousePos = (mouse.pos().x(), mouse.pos().y())
 
+        button = -1
+
+        if mouse.button() == Qt.LeftButton:
+            button = 1
+        elif mouse.button == Qt.RightButton:
+            button = 2
+        elif mouse.button == Qt.MiddleButton:
+            button = 3
+
+        self.mousePress.emit(button, (self.camera[0]+mouse.pos().x())*self.zoom, (self.camera[1]+mouse.pos().y())*self.zoom)
+
         mouse.accept()
 
     def wheelEvent(self, mouse):
@@ -285,3 +313,23 @@ class GLWidget(QGLWidget):
 
         mouse.accept()
 
+    def calculateVBOList(self):
+        '''
+        Create the VBO list to be passed on to the module for drawing
+        '''
+        self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
+        for layer in self.layers:
+            for img in self.images[layer]:
+                if img.hidden:
+                    continue
+                self.vbolist.append(img.textureId)
+                self.vbolist.append(img.offset)
+        glmod.setVBO(tuple(self.vbolist))
+
+    def hideImage(self, image, hide):
+        '''
+        This function should only be called from image.py
+        Use Image.hide() instead.
+        '''
+        if fmGlobals.vbos:
+            self.calculateVBOList()

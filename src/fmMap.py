@@ -16,6 +16,7 @@ class WorldMap(QObject):
     def __init__(self):
         QObject.__init__(self)
         self._provinces = {}
+        self._selectedProvince = None
         self._month = 0
         self._orders = []
 
@@ -40,6 +41,8 @@ class WorldMap(QObject):
         #                  "Southeastland":("Southwestshire", "Northeastica")}
 
         self.loadFromFile("province_data.txt")
+
+        fmGlobals.glwidget.mousePress.connect(self.mapClicked)
 
         #semi-debug stuff----
         self._tmpsov = fmPeople.Character("Test Sovereign")
@@ -71,6 +74,8 @@ class WorldMap(QObject):
         
     def loadFromFile(self, filename):
         '''Dubiously loads provinces from a province file.'''
+        import traceback
+
         with open(filename) as f:
             provs = f.read().split("PROV")
             for prov in provs:
@@ -94,14 +99,23 @@ class WorldMap(QObject):
                             extracted["land"].append([int(line[3]), line[5:]])
                         elif "$s" in line:
                             extracted["sea"].append([int(line[3]), line[5:]])
-                    self._provinces[extracted["name"]] = fmProv.Province(initname = extracted["name"], 
-                                                                         image = extracted["img"],
+
+                    if len(extracted.keys()) == 2:
+                        continue
+
+                    #img on layer -2 first, so it gets hidden(dirty hack before I implement a way to hide images)
+                    img = fmGlobals.glwidget.createImage('data/' + extracted["img"], 2, [0, 0, -1, -1], [extracted["x"], extracted["y"], -1, -1])
+                    img.hidden = True
+
+                    self._provinces[extracted["name"]] = fmProv.Province(initname = extracted["name"],
+                                                                         image = img,
                                                                          initpop = extracted["pop"],
-                                                                         imageoffset = (extracted["x"], extracted["y"]),
                                                                          initgoods = extracted["goods"],
                                                                          landroutes = extracted["land"],
                                                                          searoutes = extracted["sea"])
-                except:
+                except Exception as e:
+                    print e.args
+                    print traceback.format_exc()
                     pass
             
     def provinces(self):
@@ -145,6 +159,19 @@ class WorldMap(QObject):
         '''Add an order to the list of orders which are yet to arrive at their destination.
            That is not to say that these could be corrupted, and their routes changed. No one knows!'''
         self._orders.append(order)
+
+    def mapClicked(self, button, x, y):
+        for p in self._provinces.values():
+            r = p.displayOffset()
+
+            if x >= r[0] and x <= r[0]+r[2] and y >= r[1] and y <= r[1]+r[3]:
+                if self._selectedProvince != None:
+                    self._selectedProvince.image().hidden = True
+
+                p.image().hidden = False
+
+                self._selectedProvince = p
+                break
 
     def advanceMonth(self):
         '''Advances the entire world one month of game time.'''
