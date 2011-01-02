@@ -1,13 +1,11 @@
 #include <Python.h>
-#include <windows.h>
 #include <GL/gl.h>
 
-
 #ifdef _WIN32
+#include <windows.h>
 #include "glext.h"
 PFNGLBINDBUFFERPROC glBindBuffer = NULL;
 #endif
-
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -132,8 +130,12 @@ static PyObject * glmod_init(PyObject *self, PyObject* args)
 {
     texid = NULL;
     offsets = NULL;
-    return PyInt_FromLong(0L);
+
+#ifdef _WIN32
     glBindBuffer = (PFNGLBINDBUFFERARBPROC)wglGetProcAddress("glBindBuffer");
+#endif
+
+    return PyInt_FromLong(0L);
 }
 
 static PyObject * glmod_clear(PyObject *self, PyObject* args)
