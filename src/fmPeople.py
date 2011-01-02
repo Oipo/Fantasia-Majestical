@@ -152,9 +152,9 @@ class Character:
 
         if p.getUnrestDescList().index(p.getUnrestDescriptor()) <= p.getUnrestDescList().index(gov.order().unrest.lower()):
             if p.taxRate() < gov.order().tax:
-                p.changeTaxRate(0.4)
+                p.changeTaxRate(min(0.4, gov.order().tax - p.taxRate()))
             elif p.taxRate() > gov.order().tax:
-                p.changeTaxRate(-0.4)
+                p.changeTaxRate(max(-0.4, gov.order().tax - p.taxRate()))
                 
         
 class Persona:

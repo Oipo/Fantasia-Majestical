@@ -32,12 +32,14 @@ class WorldMap(QObject):
                     ["Northeastica", (1000, 0), 'landtopright.png']]:
             qimg = 'data/' + dat[2]
             img = fmGlobals.glwidget.createImage(qimg, -1, (0, 0, 1000, 1000), (dat[1][0], dat[1][1], 1000, 1000))
-            self.loadFromFile("province_data.txt")
+
             #self._provinces[dat[0]] = fmProv.Province(dat[0], img)
         #self._movement = {"Northwestia":("Southwestshire", "Northeastica"),
         #                  "Southwestshire":("Southeastland", "Northwestia"),
         #                  "Northeastica":("Southeastland", "Northwestia"),
         #                  "Southeastland":("Southwestshire", "Northeastica")}
+
+        self.loadFromFile("province_data.txt")
 
         #semi-debug stuff----
         self._tmpsov = fmPeople.Character("Test Sovereign")

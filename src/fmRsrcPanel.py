@@ -204,12 +204,14 @@ class RsrcPanel(QDockWidget):
         if selectedP == playerP:
             d = governProvinceDialog(selectedP)
             if d.exec_():
-                selectedP.setTaxRate(int(d.tax.text()))
-                self.provinceList.updateStats()
+                order = Order(float(d.tax.text()), selectedP.getUnrestDescriptor())
+                origin = fmGlobals.worldmap.getCharacterProvince(fmGlobals.worldmap.getHumanPlayer().sovereign()).government()
+                request = OrderRequest(origin, origin, order)
+                fmGlobals.worldmap.addOrderRequestToQueue(request)
         else:
             d = governGovernerDialog(selectedP)
             if d.exec_():
-                order = Order(str(d.tax.text()), str(d.unrest.currentText()))
+                order = Order(float(d.tax.text()), str(d.unrest.currentText()))
                 origin = fmGlobals.worldmap.getCharacterProvince(fmGlobals.worldmap.getHumanPlayer().sovereign()).government()
                 target = selectedP.government()
                 request = OrderRequest(origin, target, order)
