@@ -93,7 +93,7 @@ class GLWidget(QGLWidget):
         glClearColor(0.0, 0.0, 0.0, 0.0)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
 
-        if mod and not glInitVertexBufferObjectARB():
+        if mod and glInitVertexBufferObjectARB():
             glmod.init()
             fmGlobals.vbos = True
             print "using VBOs"
@@ -282,10 +282,10 @@ class GLWidget(QGLWidget):
             button = 1
         elif mouse.button == Qt.RightButton:
             button = 2
-        elif mouse.button == Qt.MiddleButton:
+        elif mouse.button == Qt.MidButton:
             button = 3
 
-        self.mousePress.emit(button, (self.camera[0]+mouse.pos().x())*self.zoom, (self.camera[1]+mouse.pos().y())*self.zoom)
+        self.mousePress.emit(button, (mouse.pos().x()-self.camera[0])*self.zoom, (mouse.pos().y()-self.camera[1])*self.zoom)
 
         mouse.accept()
 
