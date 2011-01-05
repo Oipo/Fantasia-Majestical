@@ -127,13 +127,13 @@ class GLWidget(QGLWidget):
                 qimg = QImage(qimagepath)
             drawRect[3] = qimg.height()
 
-        image = Image(qimagepath, textureRect, drawRect, dynamicity)
+        image = Image(qimagepath, textureRect, drawRect, layer, dynamicity)
 
         texture = None
         found = False
 
         for qimgpath in self.qimages:
-            if qimgpath == qimagepath:
+            if qimgpath == qimagepath and self.qimages[qimgpath][1] > 0:
                 texture = self.qimages[qimgpath][0]
                 found = True
 
@@ -170,8 +170,7 @@ class GLWidget(QGLWidget):
             self.fillBuffers(image)
             self.qimages[qimagepath].append(image.offset)
 
-            self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
-            self.calculateVBOList()
+            self.calculateVBOList(image)
 
         return image
 
@@ -265,6 +264,39 @@ class GLWidget(QGLWidget):
         glTexCoord2i(x, y);
         glVertex3f(dx, (dy+dh), 0);
         glEnd();
+        
+    def calculateVBOList(self, image = None):
+        '''
+        Create the VBO list to be passed on to the module for drawing
+        '''
+        if image != None:
+            if image.layer == self.layers[len(self.layers)-1]:
+                self.vbolist.append(image.textureId)
+                self.vbolist.append(image.offset)
+                glmod.setVBO(tuple(self.vbolist))
+                return
+            elif image.layer == self.layers[0]:
+                self.vbolist.insert(0, image.textureId)
+                self.vbolist.insert(0, image.offset)
+                glmod.setVBO(tuple(self.vbolist))
+                return
+        
+        self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
+        for layer in self.layers:
+            for img in self.images[layer]:
+                if img.hidden:
+                    continue
+                self.vbolist.append(img.textureId)
+                self.vbolist.append(img.offset)
+        glmod.setVBO(tuple(self.vbolist))
+
+    def hideImage(self, image, hide):
+        '''
+        This function should only be called from image.py
+        Use Image.hide() instead.
+        '''
+        if fmGlobals.vbos:
+            self.calculateVBOList()
 
     def mouseMoveEvent(self, mouse):
         self.camera[0] += mouse.pos().x() - self.lastMousePos[0]
@@ -285,7 +317,7 @@ class GLWidget(QGLWidget):
         elif mouse.button == Qt.MidButton:
             button = 3
 
-        self.mousePress.emit(button, (mouse.pos().x()-self.camera[0])*self.zoom, (mouse.pos().y()-self.camera[1])*self.zoom)
+        self.mousePress.emit(button, (mouse.pos().x()-self.camera[0])/self.zoom, (mouse.pos().y()-self.camera[1])/self.zoom)
 
         mouse.accept()
 
@@ -312,24 +344,3 @@ class GLWidget(QGLWidget):
         self.camera[1] = oldCoord2[1] * self.zoom - ((oldCoord[1]*self.zoom)-mouse.pos().y())
 
         mouse.accept()
-
-    def calculateVBOList(self):
-        '''
-        Create the VBO list to be passed on to the module for drawing
-        '''
-        self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
-        for layer in self.layers:
-            for img in self.images[layer]:
-                if img.hidden:
-                    continue
-                self.vbolist.append(img.textureId)
-                self.vbolist.append(img.offset)
-        glmod.setVBO(tuple(self.vbolist))
-
-    def hideImage(self, image, hide):
-        '''
-        This function should only be called from image.py
-        Use Image.hide() instead.
-        '''
-        if fmGlobals.vbos:
-            self.calculateVBOList()

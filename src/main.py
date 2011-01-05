@@ -35,8 +35,7 @@ class MainWindow(QMainWindow):
 
     def start(self):
         fmGlobals.worldmap = WorldMap()
-
-        self.rsrcPanel = RsrcPanel(self)
+        fmGlobals.rsrcpanel = RsrcPanel(self)
 
     def drawTimerTimeout(self):
         fmGlobals.glwidget.updateGL()

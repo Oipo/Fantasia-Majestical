@@ -116,6 +116,7 @@ class provinceListWidget(QListWidget):
             item = self.item(index.row())
 
             self.setStats(item)
+            fmGlobals.worldmap.setSelectedProvince(item.province)
 
     def updateStats(self):
         for item in self.selectedItems():
@@ -193,6 +194,13 @@ class RsrcPanel(QDockWidget):
 
         self.setWidget(self.contents)
         mainWindow.addDockWidget(Qt.RightDockWidgetArea, self)
+        
+    def setSelectedProvince(self, province):
+        for x in range(self.provinceList.count()):
+            item = self.provinceList.item(x)
+            if item.province == province:
+                self.provinceList.setCurrentItem(item)
+                return
 
     def governPressed(self, checked):
         playerP = fmGlobals.worldmap.getCharacterProvince(self.player.sovereign())

@@ -165,13 +165,16 @@ class WorldMap(QObject):
             r = p.displayOffset()
 
             if x >= r[0] and x <= r[0]+r[2] and y >= r[1] and y <= r[1]+r[3]:
-                if self._selectedProvince != None:
-                    self._selectedProvince.image().hidden = True
-
-                p.image().hidden = False
-
-                self._selectedProvince = p
+                self.setSelectedProvince(p)
+                fmGlobals.rsrcpanel.setSelectedProvince(p)
                 break
+                
+    def setSelectedProvince(self, province):
+        if self._selectedProvince != None:
+            self._selectedProvince.image().hidden = True
+
+        province.image().hidden = False
+        self._selectedProvince = province
 
     def advanceMonth(self):
         '''Advances the entire world one month of game time.'''

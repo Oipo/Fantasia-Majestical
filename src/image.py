@@ -12,15 +12,16 @@ import fmGlobals
 
 import numpy
 
-class Image:
+class Image(object):
     '''
     Class for storing image data, position and some opengl stuff
     '''
 
-    def __init__(self, imagepath, textureRect, drawRect, dynamicity):
+    def __init__(self, imagepath, textureRect, drawRect, layer, dynamicity):
         self.imagepath = imagepath
         self.drawRect = drawRect
         self.textureRect = textureRect
+        self.layer = layer
         self.dynamicity = dynamicity
         self.textureId = None
         self.offset = None
@@ -32,10 +33,10 @@ class Image:
         return self._hidden
 
     @hidden.setter
-    def hidden(self, hidden):
-        if(self._hidden != hidden):
-            self._hidden = hidden
-            fmGlobals.glwidget.hideImage(self, hidden)
+    def hidden(self, hide):
+        if self._hidden != hide:
+            self._hidden = hide
+            fmGlobals.glwidget.hideImage(self, hide)
 
     def setDrawRect(self, drawRect):
         self.drawRect = drawRect
