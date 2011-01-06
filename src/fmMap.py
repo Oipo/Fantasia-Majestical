@@ -45,26 +45,25 @@ class WorldMap(QObject):
         fmGlobals.glwidget.mousePress.connect(self.mapClicked)
 
         #semi-debug stuff----
-        self._tmpsov = fmPeople.Character("Test Sovereign")
-        self._AIsov = fmPeople.Character("AI Sovereign")
+        self._tmpsov = fmPeople.Character(self.province("Grail"), "Test Sovereign")
         self._governments = {}
 
         gov = fmGov.Government(self, self.province("Grail"), self._tmpsov, self._tmpsov)
         self._governments["Empire of Grail"] = gov
 
-        gov = fmGov.Government(self, self.province("Glimmer"), self._tmpsov, self._AIsov)
+        gov = fmGov.Government(self, self.province("Glimmer"), self._tmpsov, fmPeople.Character(self.province("Glimmer")))
         self._governments["Duchy of Glimmer"] = gov
 
-        gov = fmGov.Government(self, self.province("Western Seneschals"), self._tmpsov, self._AIsov)
+        gov = fmGov.Government(self, self.province("Western Seneschals"), self._tmpsov, fmPeople.Character(self.province("Western Seneschals")))
         self._governments["Barony of Western Seneschals"] = gov
 
-        gov = fmGov.Government(self, self.province("Eastern Seneschals"), self._tmpsov, self._AIsov)
+        gov = fmGov.Government(self, self.province("Eastern Seneschals"), self._tmpsov, fmPeople.Character(self.province("Eastern Seneschals")))
         self._governments["Barony of Eastern Seneschals"] = gov
         
-        gov = fmGov.Government(self, self.province("Grail Coast"), self._tmpsov, self._AIsov)
+        gov = fmGov.Government(self, self.province("Grail Coast"), self._tmpsov, fmPeople.Character(self.province("Grail Coast")))
         self._governments["Barony of Grail Coast"] = gov
         
-        gov = fmGov.Government(self, self.province("Tolbank"), self._tmpsov, self._AIsov)
+        gov = fmGov.Government(self, self.province("Tolbank"), self._tmpsov, fmPeople.Character(self.province("Tolbank")))
         self._governments["Duchy of Tolbank"] = gov
 
         self._players = {"Test Player":fmPlayer.Player(self, self._tmpsov, self._governments["Empire of Grail"])}

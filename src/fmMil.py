@@ -35,6 +35,10 @@ class Regiment:
         '''Returns the name of the unit's current location.'''
         return self._province
     
+    def printable(self):
+        '''Returns a short printable description of the regiment.'''
+        return str(self._size) + " soldiers (" + self._commander.currentPersona().name() + ")"
+    
     def getMoraleDescriptor(self):
         '''Returns a one-word description of the regiment's morale suitable for display to the player.'''
         if self._morale <= 0:
