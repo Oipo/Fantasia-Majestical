@@ -165,6 +165,9 @@ class WorldMap(QObject):
             r = p.displayOffset()
 
             if x >= r[0] and x <= r[0]+r[2] and y >= r[1] and y <= r[1]+r[3]:
+                img = QImage(p.image().imagepath)
+                if qAlpha(img.pixel(x-r[0], y-r[1])) == 0:
+                    continue
                 self.setSelectedProvince(p)
                 fmGlobals.rsrcpanel.setSelectedProvince(p)
                 break
