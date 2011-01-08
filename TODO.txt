@@ -1,0 +1,8 @@
+-Province policies, 0-10 on some choices, binary on other choices
+-Resources, for trading, dynamic prices depending on supply/demand
+-Recruiting characters from provinces, sending out people to hire early on, and later on have some system to filter out the incompetent ones
+-Distinction between Governor, Courier and Commander(all subsets of Character?)
+-Distinction between core stats, modifiable stats and skills for characters
+-Possibly representing buildings in a province, depending on followed policy
+-What happens when Sovereign dies: Some dynasty thing?
+-Action points per Character per month, spending more points on an action increases likelyhood of success/power
