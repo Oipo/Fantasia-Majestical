@@ -4,7 +4,7 @@
 #
 #By Doctus (kirikayuumura.noir@gmail.com)
 
-import fmNameGen, random
+import fmNameGen, fmMil, random
 
 def _rstat():
     return min(100, max(0, random.gauss(50, 12)))
@@ -72,7 +72,7 @@ class Relationship:
 
 class Character:
     
-    def __init__(self, name="random"):
+    def __init__(self, initloc, name="random"):
         if name == "random":
             self._name = fmNameGen.getName("japanese")
         else:
@@ -82,6 +82,7 @@ class Character:
         self._alts = {self._name:self._mainPersona}
         self._relationships = {}
         self._stats = {}
+        self._loc = initloc
         for stat in ["courage", "temperance", "fortitude", "compassion",
                      "piety", "industriousness", "pride", "charm",
                      "cleverness", "analysis", "intuition", "determination",
@@ -102,6 +103,10 @@ class Character:
         '''Returns the character's actual internal name.'''
         return self._name
     
+    def location(self):
+        '''Returns the character's current location.'''
+        return self._loc
+    
     def stat(self, statname):
         '''Returns the character's value in a given statistic.'''
         return self._stats[statname]
@@ -109,6 +114,12 @@ class Character:
     def hasPersona(self, name):
         '''Returns whether the passed name is one of the character's.'''
         return self._alts.has_key(name)
+    
+    def recruit(self, limit):
+        '''Attempts to recruit soldiers in the current province, up to provided limit.'''
+        regSize = min(int(limit), int((self.stat("leadership")/5)*(self.stat("charm")/5)))
+        self._loc.addRegiment(fmMil.Regiment(regSize, self, self._loc.name()))
+        self._loc.recruit(regSize)
     
     def createPersona(self, name):
         '''Creates an entirely new persona for this character.'''
@@ -125,7 +136,7 @@ class Character:
         
     def currentPersona(self):
         '''Gets the character's currently portrayed persona.'''
-        return self._currentPesona
+        return self._currentPersona
     
     def setRelationship(self, target, affection=None, loyalty=None):
         '''Sets the relationship with the target persona to the specified value(s).'''

@@ -131,6 +131,10 @@ class provinceListWidget(QListWidget):
         panel.tax.setText(str(p.taxRate()) + "%")
         panel.monthly.setText(str(p.getTax()) + "(" + str(p.goodsValue()) + ")")
         panel.unrest.setText(str(p.getUnrestDescriptor()))
+        if len(p.regiments()) > 0:
+                panel.regiments.setText(str(p.regiments()[0].printable()))
+        else:
+                panel.regiments.setText("No Regiments")
 
 class RsrcPanel(QDockWidget):
     '''Resource panel. Shows the various resources of the provinces, should later be converted to only showing the players' resources'''
@@ -147,10 +151,13 @@ class RsrcPanel(QDockWidget):
         self.tax = QLabel("0")
         self.monthly = QLabel("0")
         self.unrest = QLabel("0")
+        self.regiments = QLabel("0")
 
         self.govern = QPushButton("Govern")
+        self.recruit = QPushButton("Recruit")
 
         self.govern.clicked.connect(self.governPressed)
+        self.recruit.clicked.connect(self.recruitPressed)
 
         x = 0
 
@@ -160,6 +167,9 @@ class RsrcPanel(QDockWidget):
         x += 1
 
         grid.addWidget(self.govern, x, 0)
+        x += 1
+        
+        grid.addWidget(self.recruit, x, 0)
         x += 1
 
         grid.addWidget(QLabel("Population(fighting):"), x, 0)
@@ -180,6 +190,10 @@ class RsrcPanel(QDockWidget):
 
         grid.addWidget(QLabel("Unrest:"), x, 0)
         grid.addWidget(self.unrest, x, 1)
+        x += 1
+        
+        grid.addWidget(QLabel("Regiments:"), x, 0)
+        grid.addWidget(self.regiments, x, 1)
         x += 1
 
         self.contents.setLayout(grid)
@@ -224,4 +238,17 @@ class RsrcPanel(QDockWidget):
                 target = selectedP.government()
                 request = OrderRequest(origin, target, order)
                 fmGlobals.worldmap.addOrderRequestToQueue(request)
+                
+    def recruitPressed(self, checked):
+        playerP = fmGlobals.worldmap.getCharacterProvince(self.player.sovereign())
+        selectedP = None
 
+        for item in self.provinceList.selectedItems():
+            selectedP = item.province
+
+        if selectedP == playerP:
+            self.player.sovereign().recruit(selectedP.normalLevy())
+        
+        else:
+            print "You try to recruit soldiers in another province, violating galactic law! The great space battlefleets descend upon the province and reduce it to dust."
+            selectedP.changePopulation(-1)

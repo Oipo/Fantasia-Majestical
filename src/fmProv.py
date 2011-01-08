@@ -21,6 +21,7 @@ class Province:
         self._government = initgov
         self._land = landroutes
         self._sea = searoutes
+        self._regiments = []
         
         #Even for a temporary militia, roughly 25% are too young to fight, 10% are too old, and 15% are otherwise physically incapable
         self._fightpop = initpop * 0.60
@@ -66,6 +67,18 @@ class Province:
     def government(self):
         '''Returns the province's current government.'''
         return self._government
+    
+    def regiments(self):
+        '''Returns a list of regiments stationed in the province.'''
+        return self._regiments
+    
+    def addRegiment(self, new):
+        '''Adds a regiment to the province.'''
+        self._regiments.append(new)
+        
+    def removeRegiment(self, reg):
+        '''Removes a regiment from the province.'''
+        self._regiments.remove(reg)
     
     def setGovernment(self, new):
         '''Changes the province's government.'''
