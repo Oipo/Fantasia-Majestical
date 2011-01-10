@@ -8,3 +8,10 @@ rsrcpanel = None
 
 #music
 mediaobject = None
+
+try:
+    import PyQt4.phonon
+    musicOn = True
+except ImportError:
+    musicOn = False
+    
