@@ -4,12 +4,16 @@
 #
 #By Oipo (kingoipo@gmail.com)
 
+import os
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from PyQt4.phonon import *
 
 from glwidget import *
 from fmMap import *
 from fmRsrcPanel import *
+from fmMusPanel import *
 import fmGlobals
 
 class MainWindow(QMainWindow):
@@ -24,6 +28,10 @@ class MainWindow(QMainWindow):
         fmGlobals.glwidget = GLWidget(self)
         self.setCentralWidget(fmGlobals.glwidget)
         fmGlobals.glwidget.makeCurrent() 
+        
+        fmGlobals.mediaobject = Phonon.MediaObject(self)
+        self.audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
+        Phonon.createPath(fmGlobals.mediaobject, self.audioOutput)
 
         self.drawTimer = QTimer()
         self.drawTimer.timeout.connect(self.drawTimerTimeout)
@@ -36,6 +44,7 @@ class MainWindow(QMainWindow):
     def start(self):
         fmGlobals.worldmap = WorldMap()
         fmGlobals.rsrcpanel = RsrcPanel(self)
+        fmGlobals.muspanel = MusPanel(self)
 
     def drawTimerTimeout(self):
         fmGlobals.glwidget.updateGL()

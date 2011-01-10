@@ -78,7 +78,7 @@ class GLWidget(QGLWidget):
         glLoadIdentity()
         glOrtho(0, w, h, 0, -1, 1)
         glMatrixMode(GL_MODELVIEW)
-        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST) 
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
 
     def initializeGL(self):
         '''
@@ -100,7 +100,7 @@ class GLWidget(QGLWidget):
             self.VBO = int(glGenBuffersARB(1))
 
     #util functions
-    def createImage(self, qimagepath, layer, textureRect, drawRect, dynamicity = GL_STATIC_DRAW_ARB):
+    def createImage(self, qimagepath, layer, textureRect, drawRect, hidden = False, dynamicity = GL_STATIC_DRAW_ARB):
         '''
         FILL IN LATER PLOX
         '''
@@ -127,7 +127,7 @@ class GLWidget(QGLWidget):
                 qimg = QImage(qimagepath)
             drawRect[3] = qimg.height()
 
-        image = Image(qimagepath, textureRect, drawRect, layer, dynamicity)
+        image = Image(qimagepath, textureRect, drawRect, layer, hidden, dynamicity)
 
         texture = None
         found = False
@@ -198,15 +198,15 @@ class GLWidget(QGLWidget):
                     img.offset = int(float(self.offset)/vertByteCount*4)
                     VBOData = img.getVBOData()
 
-                    glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, ADT.arrayByteCount(VBOData), VBOData)
-                    self.offset += ADT.arrayByteCount(VBOData)
+                    glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
+                    self.offset += vertByteCount
 
         else:
             image.offset = int(float(self.offset)/vertByteCount*4)
             VBOData = image.getVBOData()
 
-            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, ADT.arrayByteCount(VBOData), VBOData)
-            self.offset += ADT.arrayByteCount(VBOData)
+            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
+            self.offset += vertByteCount
 
     def deleteImage(self, image):
         '''
@@ -268,6 +268,8 @@ class GLWidget(QGLWidget):
     def calculateVBOList(self, image = None):
         '''
         Create the VBO list to be passed on to the module for drawing
+        vbolist could possibly be a multi-layered tuple, one tuple per layer.
+        So that it doesn't have to be recalculated every time one single image is changed.
         '''
         if image != None:
             if image.layer == self.layers[len(self.layers)-1]:

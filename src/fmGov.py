@@ -4,51 +4,6 @@
 #
 #By Doctus (kirikayuumura.noir@gmail.com)
 
-class Order:
-
-    def __init__(self, tax, unrest):
-        self.tax = tax
-        self.unrest = unrest
-
-class OrderRequest:
-
-    def __init__(self, originatinggovernment, targetgovernment, order):
-        self.origin = originatinggovernment
-        self.target = targetgovernment
-        self.current = originatinggovernment
-        self.order = order
-        self.route = []
-
-        self.calculateRoute()
-
-        #debug
-        import sys
-
-        if not isinstance(originatinggovernment, Government):
-            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
-            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
-
-        if not isinstance(targetgovernment, Government):
-            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
-            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
-
-        if not isinstance(order, Order):
-            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
-            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
-
-    def calculateRoute(self):
-        self.route = [self.target, self.origin] #this list is in reverse order. That is, [0] is the end, [len(self)] is the start
-
-    def advanceMonth(self):
-        self.current = self.route.pop()
-
-        if self.current == self.target:
-            self.target.setOrder(self.order)
-            
-    def done(self):
-        '''So that outside classes can determine whether to garbage collect this class'''
-        return (self.current == self.target)
-
 class Government:
     
     def __init__(self, mappe, startingprovince, leader, governor, order = None, startingtreasury=500):
@@ -61,7 +16,7 @@ class Government:
         self._order = order
 
         if order == None:
-            self._order = Order(5, "Calm")
+            self._order = {"tax":5, "unrest":"Calm"}
 
         #debug
         import sys
@@ -83,10 +38,6 @@ class Government:
             print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
 
         if not isinstance(startingprovince, Province):
-            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
-            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
-
-        if not isinstance(self._order, Order):
             f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
             print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
         

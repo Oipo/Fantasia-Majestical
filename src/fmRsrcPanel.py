@@ -4,6 +4,8 @@ from PyQt4.QtGui import *
 import fmGlobals
 from fmGov import *
 
+from fmPeople import *
+
 class governProvinceDialog(QDialog):
 
     def __init__(self, province):
@@ -206,6 +208,7 @@ class RsrcPanel(QDockWidget):
 
         self.provinceList.setCurrentRow(0)
 
+        self.setWindowTitle("Resource Panel")
         self.setWidget(self.contents)
         mainWindow.addDockWidget(Qt.RightDockWidgetArea, self)
         
@@ -226,17 +229,17 @@ class RsrcPanel(QDockWidget):
         if selectedP == playerP:
             d = governProvinceDialog(selectedP)
             if d.exec_():
-                order = Order(float(d.tax.text()), selectedP.getUnrestDescriptor())
+                order = {"tax":float(d.tax.text()), "unrest":selectedP.getUnrestDescriptor()}
                 origin = fmGlobals.worldmap.getCharacterProvince(fmGlobals.worldmap.getHumanPlayer().sovereign()).government()
-                request = OrderRequest(origin, origin, order)
+                request = Messenger(origin, origin, order)
                 fmGlobals.worldmap.addOrderRequestToQueue(request)
         else:
             d = governGovernerDialog(selectedP)
             if d.exec_():
-                order = Order(float(d.tax.text()), str(d.unrest.currentText()))
+                order = {"tax":float(d.tax.text()), "unrest":str(d.unrest.currentText())}
                 origin = fmGlobals.worldmap.getCharacterProvince(fmGlobals.worldmap.getHumanPlayer().sovereign()).government()
                 target = selectedP.government()
-                request = OrderRequest(origin, target, order)
+                request = Messenger(origin, target, order)
                 fmGlobals.worldmap.addOrderRequestToQueue(request)
                 
     def recruitPressed(self, checked):

@@ -102,9 +102,7 @@ class WorldMap(QObject):
                     if len(extracted.keys()) == 2:
                         continue
 
-                    #img on layer -2 first, so it gets hidden(dirty hack before I implement a way to hide images)
-                    img = fmGlobals.glwidget.createImage('data/' + extracted["img"], 2, [0, 0, -1, -1], [extracted["x"], extracted["y"], -1, -1])
-                    img.hidden = True
+                    img = fmGlobals.glwidget.createImage('data/' + extracted["img"], 2, [0, 0, -1, -1], [extracted["x"], extracted["y"], -1, -1], True)
 
                     self._provinces[extracted["name"]] = fmProv.Province(initname = extracted["name"],
                                                                          image = img,

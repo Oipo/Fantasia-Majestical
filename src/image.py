@@ -17,7 +17,7 @@ class Image(object):
     Class for storing image data, position and some opengl stuff
     '''
 
-    def __init__(self, imagepath, textureRect, drawRect, layer, dynamicity):
+    def __init__(self, imagepath, textureRect, drawRect, layer, hidden, dynamicity):
         self.imagepath = imagepath
         self.drawRect = drawRect
         self.textureRect = textureRect
@@ -26,7 +26,7 @@ class Image(object):
         self.textureId = None
         self.offset = None
         self.VBO = None
-        self._hidden = False
+        self._hidden = hidden
 
     @property
     def hidden(self):

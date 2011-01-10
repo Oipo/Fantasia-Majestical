@@ -1,3 +1,9 @@
+/*
+ * main - starting point of FM
+ *
+ * By Oipo (kingoipo@gmail.com)
+ */
+
 #include <Python.h>
 #include <GL/gl.h>
 

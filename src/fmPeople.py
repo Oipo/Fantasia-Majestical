@@ -5,6 +5,7 @@
 #By Doctus (kirikayuumura.noir@gmail.com)
 
 import fmNameGen, fmMil, random
+from fmGov import *
 
 def _rstat():
     return min(100, max(0, random.gauss(50, 12)))
@@ -161,12 +162,48 @@ class Character:
 
         p = gov.province()
 
-        if p.getUnrestDescList().index(p.getUnrestDescriptor()) <= p.getUnrestDescList().index(gov.order().unrest.lower()):
-            if p.taxRate() < gov.order().tax:
-                p.changeTaxRate(min(0.4, gov.order().tax - p.taxRate()))
-            elif p.taxRate() > gov.order().tax:
-                p.changeTaxRate(max(-0.4, gov.order().tax - p.taxRate()))
+        if p.getUnrestDescList().index(p.getUnrestDescriptor()) <= p.getUnrestDescList().index(gov.order()["unrest"].lower()):
+            if p.taxRate() < gov.order()["tax"]:
+                p.changeTaxRate(min(0.4, gov.order()["tax"] - p.taxRate()))
+            elif p.taxRate() > gov.order()["tax"]:
+                p.changeTaxRate(max(-0.4, gov.order()["tax"] - p.taxRate()))
                 
+        
+class Messenger(Character):
+
+    def __init__(self, originatinggovernment, targetgovernment, orders, name="random"):
+        Character.__init__(self, originatinggovernment, name)
+        self.target = targetgovernment
+        self.current = originatinggovernment
+        self.orders = orders
+        self.route = []
+
+        self.calculateRoute()
+
+        #debug
+        import sys
+
+        if not isinstance(originatinggovernment, Government):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+
+        if not isinstance(targetgovernment, Government):
+            f_code = sys._getframe(0).f_code #really bad hack to get the filename and number
+            print "Doing it wrong in" + f_code.co_filename + ":" + str(f_code.co_firstlineno)
+
+    def calculateRoute(self):
+        #this list is in reverse order. That is, [0] is the end, [len(self)] is the start
+        self.route = [self.target, self.location()]
+
+    def advanceMonth(self):
+        self.current = self.route.pop()
+
+        if self.current == self.target:
+            self.target.setOrder(self.orders)
+            
+    def done(self):
+        '''So that outside classes can determine whether to garbage collect this class'''
+        return (self.current == self.target)
         
 class Persona:
     
