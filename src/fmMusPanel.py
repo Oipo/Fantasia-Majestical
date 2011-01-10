@@ -44,6 +44,9 @@ class MusPanel(QDockWidget):
         grid.addWidget(self.musicList, x, 0, 1, 3)
         x += 1
         
+        grid.addWidget(Phonon.SeekSlider(fmGlobals.mediaobject), x, 0, 1, 3)
+        x += 1
+        
         grid.addWidget(self.play, x, 0)
         grid.addWidget(self.stop, x, 1)
         grid.addWidget(self.pause, x, 2)
@@ -51,7 +54,7 @@ class MusPanel(QDockWidget):
         
         grid.addWidget(self.shuffle, x, 0)
         x += 1
-        
+
         self.contents.setLayout(grid)
         
         self.play.clicked.connect(self.playClicked)
