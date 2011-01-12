@@ -43,8 +43,9 @@ class WorldMap(QObject):
         self.loadFromFile("province_data.txt")
 
         fmGlobals.glwidget.mousePress.connect(self.mapClicked)
-
-        #semi-debug stuff----
+        
+    def debugInitMap(self):
+        '''Moved here to prevent problems with initialization timing.'''
         self._tmpsov = fmPeople.Character(self.province("Grail"), "Test Sovereign")
         self._governments = {}
 
@@ -67,9 +68,6 @@ class WorldMap(QObject):
         self._governments["Duchy of Tolbank"] = gov
 
         self._players = {"Test Player":fmPlayer.Player(self, self._tmpsov, self._governments["Empire of Grail"])}
-        
-        
-        #--------------------
         
     def loadFromFile(self, filename):
         '''Dubiously loads provinces from a province file.'''

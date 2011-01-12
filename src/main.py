@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
 
     def start(self):
         fmGlobals.worldmap = WorldMap()
+        fmGlobals.worldmap.debugInitMap()
         fmGlobals.rsrcpanel = RsrcPanel(self)
         if fmGlobals.musicOn:
             fmGlobals.muspanel = MusPanel(self)

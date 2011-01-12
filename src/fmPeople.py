@@ -4,7 +4,7 @@
 #
 #By Doctus (kirikayuumura.noir@gmail.com)
 
-import fmNameGen, fmMil, random
+import fmNameGen, fmMil, fmGlobals, random
 from fmGov import *
 
 def _rstat():
@@ -73,7 +73,7 @@ class Relationship:
 
 class Character:
     
-    def __init__(self, initloc, name="random"):
+    def __init__(self, initloc, name="random", initage=300):
         if name == "random":
             self._name = fmNameGen.getName("japanese")
         else:
@@ -84,6 +84,8 @@ class Character:
         self._relationships = {}
         self._stats = {}
         self._loc = initloc
+        self._ap = 10
+        self._age = initage
         for stat in ["courage", "temperance", "fortitude", "compassion",
                      "piety", "industriousness", "pride", "charm",
                      "cleverness", "analysis", "intuition", "determination",
@@ -100,9 +102,19 @@ class Character:
                      "narcissism", "leadership"]:
                          self._stats[stat] = _rstat()
         
+        fmGlobals.worldmap.updateSlot.connect(self.advanceMonth)
+        
     def name(self):
         '''Returns the character's actual internal name.'''
         return self._name
+    
+    def age(self):
+        '''Returns the character's current age in months.'''
+        return self._age
+    
+    def ageYears(self):
+        '''Returns the character's current age in years (rounded down).'''
+        return self._age/12
     
     def location(self):
         '''Returns the character's current location.'''
@@ -115,6 +127,10 @@ class Character:
     def hasPersona(self, name):
         '''Returns whether the passed name is one of the character's.'''
         return self._alts.has_key(name)
+    
+    def AP(self):
+        '''Returns the character's current Action Points.'''
+        return self._ap
     
     def recruit(self, limit):
         '''Attempts to recruit soldiers in the current province, up to provided limit.'''
@@ -130,6 +146,10 @@ class Character:
         '''Adds an existing persona to the list of this character's alts.'''
         self._alts[persona.name()] = persona
         persona.addOwner(self)
+        
+    def changeAP(self, amount):
+        '''Changes the character's Action Points by the given amount.'''
+        self._ap += amount
         
     def setPersona(self, name):
         '''Sets the character's persona to the one with the specified name.'''
@@ -167,6 +187,11 @@ class Character:
                 p.changeTaxRate(min(0.4, gov.order()["tax"] - p.taxRate()))
             elif p.taxRate() > gov.order()["tax"]:
                 p.changeTaxRate(max(-0.4, gov.order()["tax"] - p.taxRate()))
+                
+    def advanceMonth(self):
+        '''Does various things to account for ordinary monthly changes.'''
+        self._ap = 10
+        self._age += 1
                 
         
 class Messenger(Character):
