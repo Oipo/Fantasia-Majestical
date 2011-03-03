@@ -5,8 +5,14 @@
 #By Oipo (kingoipo@gmail.com)
 
 from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.extensions import hasGLExtension
 from OpenGL.GL.ARB.vertex_buffer_object import *
 from OpenGL.arrays import ArrayDatatype as ADT
+
+#Only set these when creating non-development code
+OpenGL.ERROR_CHECKING = False
+OpenGL.ERROR_LOGGING = False
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -16,12 +22,24 @@ import fmGlobals
 
 mod = False
 try:
+    print "Loading GLMod"
     import glmod
     mod = True
 except:
+    print "Failed!"
     pass
 
 from image import *
+
+def nextPowerOfTwo(val):
+    val -= 1
+    val = (val >> 1) | val
+    val = (val >> 2) | val
+    val = (val >> 4) | val
+    val = (val >> 8) | val
+    val = (val >> 16) | val
+    val += 1
+    return val
 
 class GLWidget(QGLWidget):
     '''
@@ -29,10 +47,13 @@ class GLWidget(QGLWidget):
     '''
 
     mousePress = pyqtSignal(int, int, int) #button, x, y
+    #mouseMove = pyqtSignal(int, int) #x, y
     
     def __init__(self, parent):
         QGLWidget.__init__(self, parent)
         self.setMinimumSize(640, 480)
+	self.w = 640
+        self.h = 480
         self.x = 0
         self.images = dict()
         self.lastMousePos = [0, 0]
@@ -44,13 +65,14 @@ class GLWidget(QGLWidget):
         self.offset = 0
         self.vbolist = []
         self.qimages = {}
+        self.texext = GL_TEXTURE_RECTANGLE_ARB
 
     #GL functions
     def paintGL(self):
         '''
         Drawing routine
         '''
-        
+
         glClear(GL_COLOR_BUFFER_BIT)
 
         glPushMatrix()
@@ -72,20 +94,27 @@ class GLWidget(QGLWidget):
         '''
         Resize the GL window 
         '''
-        
+
         glViewport(0, 0, w, h)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         glOrtho(0, w, h, 0, -1, 1)
         glMatrixMode(GL_MODELVIEW)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
+        self.w = w
+        self.h = h
 
     def initializeGL(self):
         '''
         Initialize GL
         '''
+        global mod
 
-        glEnable(GL_TEXTURE_RECTANGLE_ARB)
+        if not hasGLExtension("GL_ARB_texture_rectangle"):
+            print "GL_TEXTURE_RECTANGLE_ARB not supported, switching to GL_TEXTURE_2D"
+            self.texext = GL_TEXTURE_2D
+
+        glEnable(self.texext)
         glEnable(GL_BLEND)
         glDisable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -93,11 +122,25 @@ class GLWidget(QGLWidget):
         glClearColor(0.0, 0.0, 0.0, 0.0)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST)
 
-        if mod and glInitVertexBufferObjectARB():
-            glmod.init()
-            fmGlobals.vbos = True
-            print "using VBOs"
-            self.VBO = int(glGenBuffersARB(1))
+        initok = False
+        if mod:
+            ret = glmod.init(self.texext)
+            if ret == -1:
+                print "Something terrible went wrong in initializing glmod"
+                mod = False
+            elif ret == -2:
+                print "using gl module without VBO support"
+            else:
+                initok = True
+                print "using gl module with VBO support"
+
+        if mod and initok:
+            if glInitVertexBufferObjectARB() and bool(glBindBufferARB):
+                fmGlobals.vbos = True
+                print "VBO support initialised succesfully"
+                self.VBO = int(glGenBuffersARB(1))
+            else:
+                print "VBO support initialisation failed, continuing without"
 
     #util functions
     def createImage(self, qimagepath, layer, textureRect, drawRect, hidden = False, dynamicity = GL_STATIC_DRAW_ARB):
@@ -105,55 +148,59 @@ class GLWidget(QGLWidget):
         FILL IN LATER PLOX
         '''
 
-        qimg = None
+        if not hasGLExtension("GL_ARB_texture_rectangle"):
+            self.texext = GL_TEXTURE_2D
 
-        if textureRect[2] == -1:
-            if qimg == None:
-                qimg = QImage(qimagepath)
-            textureRect[2] = qimg.width()
-
-        if textureRect[3] == -1:
-            if qimg == None:
-                qimg = QImage(qimagepath)
-            textureRect[3] = qimg.height()
-
-        if drawRect[2] == -1:
-            if qimg == None:
-                qimg = QImage(qimagepath)
-            drawRect[2] = qimg.width()
-
-        if drawRect[3] == -1:
-            if qimg == None:
-                qimg = QImage(qimagepath)
-            drawRect[3] = qimg.height()
-
-        image = Image(qimagepath, textureRect, drawRect, layer, hidden, dynamicity)
-
+        qimg = QImage(qimagepath)
+        
+        layer = int(layer)
         texture = None
         found = False
 
-        for qimgpath in self.qimages:
-            if qimgpath == qimagepath and self.qimages[qimgpath][1] > 0:
-                texture = self.qimages[qimgpath][0]
+        if qimagepath in self.qimages:
+            qimg = self.qimages[qimagepath][0]
+            if self.qimages[qimagepath][2] > 0:
+                texture = self.qimages[qimagepath][1]
                 found = True
+        else:
+            qimg = QImage(qimagepath)
+            print "created", qimagepath
+
+        if textureRect[2] == -1:
+            textureRect[2] = qimg.width() - 1
+
+        if textureRect[3] == -1:
+            textureRect[3] = qimg.height() - 1
+
+        if drawRect[2] == -1:
+            drawRect[2] = qimg.width()
+
+        if drawRect[3] == -1:
+            drawRect[3] = qimg.height()
+
+        image = Image(qimagepath, qimg, textureRect, drawRect, layer, hidden, dynamicity)
 
         if found == False:
-            if qimg == None:
-                qimg = QImage(qimagepath)
+            if self.texext == GL_TEXTURE_2D:
+                w = nextPowerOfTwo(qimg.width())
+                h = nextPowerOfTwo(qimg.height())
+                if w != qimg.width() or h != qimg.height():
+                    qimg = qimg.scaled(w, h)
+     
             img = self.convertToGLFormat(qimg)
             texture = glGenTextures(1)
             imgdata = img.bits().asstring(img.numBytes())
 
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture)
+            glBindTexture(self.texext, texture)
 
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexParameteri(self.texext, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexParameteri(self.texext, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
+            glTexImage2D(self.texext, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
 
-            self.qimages[qimagepath] = [texture, 1] #texture, reference count
+            self.qimages[qimagepath] = [qimg, texture, 1] #texture, reference count
         else:
-            self.qimages[qimagepath][1] += 1
+            self.qimages[qimagepath][2] += 1
 
         image.textureId = texture
 
@@ -168,11 +215,38 @@ class GLWidget(QGLWidget):
             image.VBO = self.VBO
 
             self.fillBuffers(image)
-            self.qimages[qimagepath].append(image.offset)
+            if len(self.qimages[qimagepath]) == 3:
+                self.qimages[qimagepath].append(image.offset)
 
             self.calculateVBOList(image)
 
         return image
+
+    def reserveVBOSize(self, size):
+        '''
+        Does not work yet. If this function is called, it makes glGenTextures fail
+        '''
+        return
+
+        if fmGlobals.vbos and size > self.VBOBuffer:
+            self.VBOBuffer = size
+            vertByteCount = ADT.arrayByteCount(numpy.zeros((8, 2), 'f'))
+
+            glBufferDataARB(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*vertByteCount, None, GL_STATIC_DRAW_ARB)
+
+            self.offset = 0
+
+            for layer in self.layers:
+                for img in self.images[layer]:
+                    img.offset = int(float(self.offset)/vertByteCount*4)
+                    VBOData = img.getVBOData()
+
+                    glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
+                    self.offset += vertByteCount
+
+            glBindBuffer(GL_ARRAY_BUFFER_ARB, 0)
+
+            self.calculateVBOList()
 
     def fillBuffers(self, image = None):
         '''
@@ -184,12 +258,12 @@ class GLWidget(QGLWidget):
         for layer in self.layers:
             size += len(self.images[layer])
 
-        glBindBuffer(GL_ARRAY_BUFFER_ARB, self.VBO)
+        glBindBufferARB(GL_ARRAY_BUFFER_ARB, self.VBO)
 
         if self.VBOBuffer <= size or image == None:
-            self.VBOBuffer = glmod.nextPowerOfTwo(size)
+            self.VBOBuffer = nextPowerOfTwo(size+1)
 
-            glBufferData(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*vertByteCount, None, GL_STATIC_DRAW_ARB)
+            glBufferDataARB(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*vertByteCount, None, GL_STATIC_DRAW_ARB)
 
             self.offset = 0
 
@@ -198,24 +272,26 @@ class GLWidget(QGLWidget):
                     img.offset = int(float(self.offset)/vertByteCount*4)
                     VBOData = img.getVBOData()
 
-                    glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
+                    glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
                     self.offset += vertByteCount
 
         else:
             image.offset = int(float(self.offset)/vertByteCount*4)
             VBOData = image.getVBOData()
 
-            glBufferSubData(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
+            glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
             self.offset += vertByteCount
+
+        glBindBuffer(GL_ARRAY_BUFFER_ARB, 0)
 
     def deleteImage(self, image):
         '''
-        INACCURATE. IGNORE THIS COMMENT.
+        Decreases the reference count of the texture by one, and deletes it if nothing is using it anymore
         '''
 
-        self.qimages[image.imagepath][1] -= 1
+        self.qimages[image.imagepath][2] -= 1
 
-        if self.qimages[image.imagepath][1] <= 0:
+        if self.qimages[image.imagepath][2] <= 0:
             glDeleteTextures(image.textureId)
 
         self.images[image.layer].remove(image)
@@ -224,46 +300,51 @@ class GLWidget(QGLWidget):
             self.calculateVBOList()
 
     def drawImage(self, image):
+        global mod
+
         if image.hidden:
             return
 
-        if mod:
-            x, y, w, h = image.textureRect
-            dx, dy, dw, dh = image.drawRect
+        x, y, w, h = image.textureRect
+        dx, dy, dw, dh = image.drawRect
 
+        cx, cy = self.camera
+
+        # Culling
+        if (dx * self.zoom > self.w - cx) or (dy * self.zoom > self.h - cy) or ((dx + dw) * self.zoom < 0-cx) or ((dy + dh) * self.zoom < 0-cy):
+            return
+
+        if mod:
             glmod.drawTexture(image.textureId, dx, dy, dw, dh, x, y, w, h)
         else:
-            self.drawTexture(image.textureId, image.textureRect, image.drawRect)
+            self.drawTexture(image.textureId, dx, dy, dw, dh, x, y, w, h)
 
-    def drawTexture(self, texture, textureRect, drawRect):
+    def drawTexture(self, texture, dx, dy, dw, dh, x, y, w, h):
         '''
         texture is an int
         textureRect is a list of size 4, determines which square to take from the texture
         drawRect is a list of size 4, is used to determine the drawing size
         '''
 
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture)
+        glBindTexture(self.texext, texture)
 
-        x, y, w, h = textureRect
-        dx, dy, dw, dh = drawRect
-
-        glBegin(GL_QUADS);
+        glBegin(GL_QUADS)
         #Top-left vertex (corner)
-        glTexCoord2i(x, y+h); #image/texture
-        glVertex3f(dx, dy, 0); #screen coordinates
+        glTexCoord2f(x, y+h) #image/texture
+        glVertex3f(dx, dy, 0) #screen coordinates
 
         #Bottom-left vertex (corner)
-        glTexCoord2i(x+w, y+h);
-        glVertex3f((dx+dw), dy, 0);
+        glTexCoord2f(x+w, y+h)
+        glVertex3f((dx+dw), dy, 0)
 
         #Bottom-right vertex (corner)
-        glTexCoord2i(x+w, y);
-        glVertex3f((dx+dw), (dy+dh), 0);
+        glTexCoord2f(x+w, y)
+        glVertex3f((dx+dw), (dy+dh), 0)
 
         #Top-right vertex (corner)
-        glTexCoord2i(x, y);
-        glVertex3f(dx, (dy+dh), 0);
-        glEnd();
+        glTexCoord2f(x, y)
+        glVertex3f(dx, (dy+dh), 0)
+        glEnd()
         
     def calculateVBOList(self, image = None):
         '''
@@ -271,18 +352,18 @@ class GLWidget(QGLWidget):
         vbolist could possibly be a multi-layered tuple, one tuple per layer.
         So that it doesn't have to be recalculated every time one single image is changed.
         '''
-        if image != None:
-            if image.layer == self.layers[len(self.layers)-1]:
+        if len(self.layers) > 0 and len(self.vbolist) > 2 and image != None:
+            if image.layer == self.layers[0]:
+                self.vbolist.insert(2, image.offset) #note the reversed order here
+                self.vbolist.insert(2, image.textureId)
+                glmod.setVBO(tuple(self.vbolist))
+                return
+            elif image.layer == self.layers[-1]:
                 self.vbolist.append(image.textureId)
                 self.vbolist.append(image.offset)
                 glmod.setVBO(tuple(self.vbolist))
                 return
-            elif image.layer == self.layers[0]:
-                self.vbolist.insert(0, image.textureId)
-                self.vbolist.insert(0, image.offset)
-                glmod.setVBO(tuple(self.vbolist))
-                return
-        
+
         self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
         for layer in self.layers:
             for img in self.images[layer]:
@@ -290,7 +371,9 @@ class GLWidget(QGLWidget):
                     continue
                 self.vbolist.append(img.textureId)
                 self.vbolist.append(img.offset)
-        glmod.setVBO(tuple(self.vbolist))
+
+        if len(self.vbolist) > 2:
+            glmod.setVBO(tuple(self.vbolist))
 
     def hideImage(self, image, hide):
         '''
@@ -304,7 +387,7 @@ class GLWidget(QGLWidget):
         self.camera[0] += mouse.pos().x() - self.lastMousePos[0]
         self.camera[1] += mouse.pos().y() - self.lastMousePos[1]
         self.lastMousePos = [mouse.pos().x(), mouse.pos().y()]
-
+        
         mouse.accept()
 
     def mousePressEvent(self, mouse):
@@ -318,7 +401,6 @@ class GLWidget(QGLWidget):
             button = 2
         elif mouse.button == Qt.MidButton:
             button = 3
-
         self.mousePress.emit(button, (mouse.pos().x()-self.camera[0])/self.zoom, (mouse.pos().y()-self.camera[1])/self.zoom)
 
         mouse.accept()
@@ -344,5 +426,6 @@ class GLWidget(QGLWidget):
 
         self.camera[0] = oldCoord2[0] * self.zoom - ((oldCoord[0]*self.zoom)-mouse.pos().x())
         self.camera[1] = oldCoord2[1] * self.zoom - ((oldCoord[1]*self.zoom)-mouse.pos().y())
+
 
         mouse.accept()
