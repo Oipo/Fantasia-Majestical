@@ -224,6 +224,8 @@ class GLWidget(QGLWidget):
         layer = int(layer)
         texture = None
         found = False
+        textureRect = list(textureRect)
+        drawRect = list(drawRect)
 
         if qimagepath in self.qimages:
             qimg = self.qimages[qimagepath][0]
