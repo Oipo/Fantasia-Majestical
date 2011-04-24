@@ -4,7 +4,7 @@
 #
 #By Doctus (kirikayuumura.noir@gmail.com)
 
-import random
+import random, fmGlobals
 
 class Province:
     
@@ -167,6 +167,50 @@ class Province:
     def getUnrestDescList(self):
         '''Returns a list of the possible decsriptors in lowercase.'''
         return ["placid", "calm", "uneasy", "troubled", "violent", "rebellious"]
+
+    def findShortestRoute(self, origin, target, prev = []):
+        self.route = []
+        routeLength = 99999
+        plist = self._land
+        plist.extend(self._sea)
+        prev.append(self)
+
+        if target == self:
+            
+            rl = 0
+            for p in plist:
+                if p[1] != origin.name():
+                    continue
+                rl = p[0]
+                break
+            return [[rl, self]]
+
+        for p in plist:
+            realp = fmGlobals.worldmap.province(p[1])
+            if realp == origin or realp in prev:
+                continue
+            
+            ret = realp.findShortestRoute(self, target, prev)
+            if len(ret) == 0:
+                continue
+            rl = 0
+            for x in ret:
+                rl += x[0]
+            if rl >= routeLength:
+                continue
+            found = False
+            for r in ret:
+                if r[1] == target:
+                    found = True
+                    break
+            if not found:
+                continue
+            self.route = ret
+            routeLength = rl
+            self.route.append([p[0], self])
+
+        return self.route
+                
         
     def debugPrint(self):
         print "Data for Province " + self._name

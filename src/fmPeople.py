@@ -199,7 +199,7 @@ class Messenger(Character):
     def __init__(self, originatinggovernment, targetgovernment, orders, name="random"):
         Character.__init__(self, originatinggovernment, name)
         self.target = targetgovernment
-        self.current = originatinggovernment
+        self.current = originatinggovernment #changes from gov to prov due to route calculation
         self.orders = orders
         self.route = []
 
@@ -218,12 +218,19 @@ class Messenger(Character):
 
     def calculateRoute(self):
         #this list is in reverse order. That is, [0] is the end, [len(self)] is the start
-        self.route = [self.target, self.location()]
+        
+        #self.route = [self.target, self.location()]
+        self.route = self.current.province().findShortestRoute(None, self.target.province())
+        #print self.target.province(), self.location().province()
+        #print self.route
 
     def advanceMonth(self):
+        if len(self.route) == 0:
+            return
+
         self.current = self.route.pop()
 
-        if self.current == self.target:
+        if self.current == self.target.province():
             self.target.setOrder(self.orders)
             
     def done(self):

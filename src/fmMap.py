@@ -81,9 +81,9 @@ class WorldMap(QObject):
                     extracted = {"land":[], "sea":[]}
                     for line in dat:
                         if "$n" in line:
-                            extracted["name"] = line[3:]
+                            extracted["name"] = line[3:].strip()
                         elif "$f" in line:
-                            extracted["img"] = line[3:]
+                            extracted["img"] = line[3:].strip()
                         elif "$x" in line:
                             extracted["x"] = int(line[3:])
                         elif "$y" in line:
@@ -93,9 +93,9 @@ class WorldMap(QObject):
                         elif "$g" in line:
                             extracted["goods"] = int(line[3:])
                         elif "$c" in line:
-                            extracted["land"].append([int(line[3]), line[5:]])
+                            extracted["land"].append([int(line[3]), line[5:].strip()])
                         elif "$s" in line:
-                            extracted["sea"].append([int(line[3]), line[5:]])
+                            extracted["sea"].append([int(line[3]), line[5:].strip()])
 
                     if len(extracted.keys()) == 2:
                         continue
