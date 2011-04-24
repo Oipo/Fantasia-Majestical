@@ -42,7 +42,7 @@ class WorldMap(QObject):
 
         self.loadFromFile("province_data.txt")
 
-        fmGlobals.glwidget.mousePress.connect(self.mapClicked)
+        fmGlobals.glwidget.mousePressSignal.connect(self.mapClicked)
         
     def debugInitMap(self):
         '''Moved here to prevent problems with initialization timing.'''
@@ -155,7 +155,7 @@ class WorldMap(QObject):
            That is not to say that these could be corrupted, and their routes changed. No one knows!'''
         self._orders.append(order)
 
-    def mapClicked(self, button, x, y):
+    def mapClicked(self, x, y, button):
         for p in self._provinces.values():
             r = p.displayOffset()
 

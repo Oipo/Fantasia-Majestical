@@ -8,6 +8,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.extensions import hasGLExtension
 from OpenGL.GL.ARB.vertex_buffer_object import *
+from OpenGL.GL.ARB.framebuffer_object import *
 from OpenGL.arrays import ArrayDatatype as ADT
 
 #Only set these when creating non-development code
@@ -17,8 +18,6 @@ OpenGL.ERROR_LOGGING = False
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtOpenGL import *
-
-import fmGlobals
 
 mod = False
 try:
@@ -46,26 +45,38 @@ class GLWidget(QGLWidget):
     Widget for drawing everything, and for catching mouse presses and similar
     '''
 
-    mousePress = pyqtSignal(int, int, int) #button, x, y
-    #mouseMove = pyqtSignal(int, int) #x, y
+    mousePressSignal = pyqtSignal(int, int, int) #x, y, button
+    mouseReleaseSignal = pyqtSignal(int, int, int) #x, y, button
+    mouseMoveSignal = pyqtSignal(int, int) #x, y
     
     def __init__(self, parent):
         QGLWidget.__init__(self, parent)
         self.setMinimumSize(640, 480)
-	self.w = 640
+        self.w = 640
         self.h = 480
-        self.x = 0
         self.images = dict()
         self.lastMousePos = [0, 0]
         self.camera = [0, 0]
         self.layers = []
         self.zoom = 1
         self.VBO = None
+        self.vbos = False
         self.VBOBuffer = 0
         self.offset = 0
-        self.vbolist = []
+        self.ctrl = False
+        self.shift = False
         self.qimages = {}
-        self.texext = GL_TEXTURE_RECTANGLE_ARB
+        self.texext = GL_TEXTURE_2D
+        self.npot = 3
+        self.lines = dict()
+        self.error = False
+        self.texts = []
+        self.textid = 0
+        self.vertByteCount = ADT.arrayByteCount(numpy.zeros((8, 2), 'f'))
+        self.leftMouse = False
+        
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setMouseTracking(True) #this may be the fix for a weird problem with leaveevents
 
     #GL functions
     def paintGL(self):
@@ -79,16 +90,65 @@ class GLWidget(QGLWidget):
         glTranslatef(self.camera[0], self.camera[1], 0)
         glScaled(self.zoom, self.zoom, 1)
 
-        if fmGlobals.vbos:
+        if self.vbos:
             glmod.drawVBO()
         else:
             for layer in self.layers:
                 for img in self.images[layer]:
                     self.drawImage(img)
 
+        if mod:
+            glmod.drawLines(self.lines)
+        else:
+            for layer in self.lines:
+                glLineWidth(layer)
+                glBegin(GL_LINES)
+                for line in self.lines[layer]:
+                    glVertex2f(line[0], line[1])
+                    glVertex2f(line[2], line[3])
+                glEnd()
+
+        for text in self.texts:
+            split = text[1].split("\n")
+            if len(split[0]) == 0:
+                split.pop(0)
+            pos = -16 * (len(split) - 1)
+            for t in split:
+                if len(t) == 0:
+                    continue
+                
+                self.renderText(float(text[2][0]), float(text[2][1])+pos, 0, t)
+                pos += 16
+
         glScaled(1/self.zoom, 1/self.zoom, 1)
         glTranslatef(-self.camera[0], -self.camera[1], 0)
         glPopMatrix()
+        
+    def addLine(self, thickness, x, y, w, h):
+        if not thickness in self.lines:
+            self.lines[thickness] = []
+            
+        self.lines[thickness].append((float(x), float(y), float(w), float(h)))
+        
+    def deleteLine(self, thickness, x, y, w, h):
+        if thickness == -1:
+            for layer in self.lines:
+                for line in self.lines[layer]:
+                    if self.pointIntersectRect((line[0], line[1]), (x, y, w, h)) \
+                       and self.pointIntersectRect((line[0] + line[2], line[1] + line[3]), (x, y, w, h)):
+                        self.lines[layer].remove(line)
+                        
+    def clearLines(self):
+        self.lines.clear()
+                    
+    def pointIntersectRect(self, point, rect): 
+    #point: (x, y)
+    #rect:  (x, y, w, h)
+        if point[0] < rect[0] or point[0] > rect[0] + rect[2]:
+            return False
+        if point[1] < rect[1] or point[1] > rect[1] + rect[3]:
+            return False
+        return True
 
     def resizeGL(self, w, h):
         '''
@@ -109,10 +169,22 @@ class GLWidget(QGLWidget):
         Initialize GL
         '''
         global mod
-
+        
+        if not hasGLExtension("GL_ARB_framebuffer_object"):
+            print "GL_ARB_framebuffer_object not supported, switching to GL_GENERATE_MIPMAP"
+            self.npot = 2
+        version = glGetString(GL_VERSION)
+        if int(version[0]) == 1 and int(version[2]) < 4: #no opengl 1.4 support
+            print "GL_GENERATE_MIPMAP not supported, not using mipmapping"
+            self.npot = 1
+        if not hasGLExtension("GL_ARB_texture_non_power_of_two"):
+            print "GL_ARB_texture_non_power_of_two not supported, switching to GL_ARB_texture_rectangle"
+            self.texext = GL_TEXTURE_RECTANGLE_ARB
+            self.npot = 1
         if not hasGLExtension("GL_ARB_texture_rectangle"):
             print "GL_TEXTURE_RECTANGLE_ARB not supported, switching to GL_TEXTURE_2D"
             self.texext = GL_TEXTURE_2D
+            self.npot = 0
 
         glEnable(self.texext)
         glEnable(GL_BLEND)
@@ -136,23 +208,19 @@ class GLWidget(QGLWidget):
 
         if mod and initok:
             if glInitVertexBufferObjectARB() and bool(glBindBufferARB):
-                fmGlobals.vbos = True
+                self.vbos = True
                 print "VBO support initialised succesfully"
                 self.VBO = int(glGenBuffersARB(1))
+                glmod.initVBO(self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f')))
             else:
                 print "VBO support initialisation failed, continuing without"
 
     #util functions
     def createImage(self, qimagepath, layer, textureRect, drawRect, hidden = False, dynamicity = GL_STATIC_DRAW_ARB):
         '''
-        FILL IN LATER PLOX
+        Creates an rggTile instance, uploads the correct image to GPU if not in cache, and some other helpful things.
         '''
-
-        if not hasGLExtension("GL_ARB_texture_rectangle"):
-            self.texext = GL_TEXTURE_2D
-
-        qimg = QImage(qimagepath)
-        
+        #print "requested to create", qimagepath, layer, textureRect, drawRect, hidden
         layer = int(layer)
         texture = None
         found = False
@@ -178,10 +246,10 @@ class GLWidget(QGLWidget):
         if drawRect[3] == -1:
             drawRect[3] = qimg.height()
 
-        image = Image(qimagepath, qimg, textureRect, drawRect, layer, hidden, dynamicity)
+        image = Image(qimagepath, qimg, textureRect, drawRect, layer, hidden, dynamicity, self)
 
         if found == False:
-            if self.texext == GL_TEXTURE_2D:
+            if self.npot == 0:
                 w = nextPowerOfTwo(qimg.width())
                 h = nextPowerOfTwo(qimg.height())
                 if w != qimg.width() or h != qimg.height():
@@ -192,12 +260,24 @@ class GLWidget(QGLWidget):
             imgdata = img.bits().asstring(img.numBytes())
 
             glBindTexture(self.texext, texture)
-
-            glTexParameteri(self.texext, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexParameteri(self.texext, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            
+            if self.npot == 3:
+                glTexParameteri(self.texext, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
+                glTexParameteri(self.texext, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            elif self.npot == 2:
+                glTexParameteri(self.texext, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST)
+                glTexParameteri(self.texext, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                glTexParameteri(self.texext, GL_GENERATE_MIPMAP, GL_TRUE)
+            else:
+                glTexParameteri(self.texext, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                glTexParameteri(self.texext, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 
             glTexImage2D(self.texext, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
 
+            if self.npot == 3:
+                glEnable(GL_TEXTURE_2D)
+                glGenerateMipmap(GL_TEXTURE_2D)
+            
             self.qimages[qimagepath] = [qimg, texture, 1] #texture, reference count
         else:
             self.qimages[qimagepath][2] += 1
@@ -208,52 +288,34 @@ class GLWidget(QGLWidget):
             self.images[layer] = []
             self.layers = self.images.keys()
             self.layers.sort()
+            image.createLayer = True
 
         self.images[layer].append(image)
 
-        if fmGlobals.vbos:
+        if self.vbos:
             image.VBO = self.VBO
-
             self.fillBuffers(image)
-            if len(self.qimages[qimagepath]) == 3:
-                self.qimages[qimagepath].append(image.offset)
-
             self.calculateVBOList(image)
 
         return image
 
     def reserveVBOSize(self, size):
         '''
-        Does not work yet. If this function is called, it makes glGenTextures fail
+        Reserves a VBO with the specified size as the amount of VBO entries, and re-assigns all images with the new data.
         '''
-        return
+        if self.vbos and size > self.VBOBuffer:
+            self.VBOBuffer = nextPowerOfTwo(size+1)
+            print "reserving size", self.VBOBuffer
 
-        if fmGlobals.vbos and size > self.VBOBuffer:
-            self.VBOBuffer = size
-            vertByteCount = ADT.arrayByteCount(numpy.zeros((8, 2), 'f'))
-
-            glBufferDataARB(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*vertByteCount, None, GL_STATIC_DRAW_ARB)
-
-            self.offset = 0
-
-            for layer in self.layers:
-                for img in self.images[layer]:
-                    img.offset = int(float(self.offset)/vertByteCount*4)
-                    VBOData = img.getVBOData()
-
-                    glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
-                    self.offset += vertByteCount
-
-            glBindBuffer(GL_ARRAY_BUFFER_ARB, 0)
-
+            self.fillBuffers(None, False)
             self.calculateVBOList()
 
-    def fillBuffers(self, image = None):
+    def fillBuffers(self, image = None, resize = True):
         '''
-        ALSO FILL IN LATER...PLOX
+        if image == None, this function requests a new BO from the GPU with a calculated size
+        if image != None, this function adds the VBO data from image to the BO in the GPU, if there is enough space.
         '''
         size = 0
-        vertByteCount = ADT.arrayByteCount(numpy.zeros((8, 2), 'f'))
 
         for layer in self.layers:
             size += len(self.images[layer])
@@ -261,26 +323,30 @@ class GLWidget(QGLWidget):
         glBindBufferARB(GL_ARRAY_BUFFER_ARB, self.VBO)
 
         if self.VBOBuffer <= size or image == None:
-            self.VBOBuffer = nextPowerOfTwo(size+1)
+            if resize and self.VBOBuffer <= size:
+                print "resizing from", size, "to", nextPowerOfTwo(size+1)
+                self.VBOBuffer = nextPowerOfTwo(size+1)
 
-            glBufferDataARB(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*vertByteCount, None, GL_STATIC_DRAW_ARB)
+            glBufferDataARB(GL_ARRAY_BUFFER_ARB, self.VBOBuffer*self.vertByteCount, None, GL_STATIC_DRAW_ARB)
 
             self.offset = 0
 
             for layer in self.layers:
                 for img in self.images[layer]:
-                    img.offset = int(float(self.offset)/vertByteCount*4)
+                    img.offset = int(float(self.offset)/self.vertByteCount*4)
                     VBOData = img.getVBOData()
 
-                    glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
-                    self.offset += vertByteCount
+                    glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, self.vertByteCount, VBOData)
+                    self.offset += self.vertByteCount
+            
+            self.calculateVBOList()
 
         else:
-            image.offset = int(float(self.offset)/vertByteCount*4)
+            image.offset = int(float(self.offset)/self.vertByteCount*4)
             VBOData = image.getVBOData()
 
-            glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, vertByteCount, VBOData)
-            self.offset += vertByteCount
+            glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, self.offset, self.vertByteCount, VBOData)
+            self.offset += self.vertByteCount
 
         glBindBuffer(GL_ARRAY_BUFFER_ARB, 0)
 
@@ -296,8 +362,8 @@ class GLWidget(QGLWidget):
 
         self.images[image.layer].remove(image)
 
-        if fmGlobals.vbos:
-            self.calculateVBOList()
+        if self.vbos:
+            self.calculateVBOList(image, True)
 
     def drawImage(self, image):
         global mod
@@ -346,64 +412,157 @@ class GLWidget(QGLWidget):
         glVertex3f(dx, (dy+dh), 0)
         glEnd()
         
-    def calculateVBOList(self, image = None):
+    def calculateVBOList(self, image = None, delete = False):
         '''
         Create the VBO list to be passed on to the module for drawing
-        vbolist could possibly be a multi-layered tuple, one tuple per layer.
-        So that it doesn't have to be recalculated every time one single image is changed.
+        or if the change is only one image, modify it.
         '''
-        if len(self.layers) > 0 and len(self.vbolist) > 2 and image != None:
-            if image.layer == self.layers[0]:
-                self.vbolist.insert(2, image.offset) #note the reversed order here
-                self.vbolist.insert(2, image.textureId)
-                glmod.setVBO(tuple(self.vbolist))
-                return
-            elif image.layer == self.layers[-1]:
-                self.vbolist.append(image.textureId)
-                self.vbolist.append(image.offset)
-                glmod.setVBO(tuple(self.vbolist))
-                return
+        if len(self.layers) > 0 and image != None:
+            if delete:
+                #print "setLayer"
+                temp = [self.layers.index(image.layer)]
+                for img in self.images[image.layer]:
+                    if img.hidden or img == image:
+                        continue
+                    temp.append(int(img.textureId))
+                    temp.append(img.offset)
+                glmod.setVBOlayer(tuple(temp))
+            elif image.createLayer:
+                layer = self.layers.index(image.layer)
+                glmod.insertVBOlayer((layer, int(image.textureId), image.offset))
+                #print "addLayer", (layer, image.textureId, image.offset)
+                image.createLayer = False
+            elif not image.hidden:
+                layer = self.layers.index(image.layer)
+                #print "addEntry", (layer, image.textureId, image.offset)
+                glmod.addVBOentry((layer, int(image.textureId), image.offset))
+            return
 
-        self.vbolist = [self.VBO, ADT.arrayByteCount(numpy.zeros((2, 2), 'f'))]
+        vbolist = []
         for layer in self.layers:
+            temp = []
             for img in self.images[layer]:
                 if img.hidden:
                     continue
-                self.vbolist.append(img.textureId)
-                self.vbolist.append(img.offset)
+                temp.append(img.textureId)
+                temp.append(img.offset)
+            vbolist.append(tuple(temp))
 
-        if len(self.vbolist) > 2:
-            glmod.setVBO(tuple(self.vbolist))
+        if len(vbolist) > 2:
+            #print "setVBO", vbolist
+            glmod.setVBO(tuple(vbolist))
 
     def hideImage(self, image, hide):
         '''
         This function should only be called from image.py
         Use Image.hide() instead.
         '''
-        if fmGlobals.vbos:
-            self.calculateVBOList()
+        if self.vbos:
+            self.calculateVBOList(image, hide)
+            
+    def setLayer(self, image, newLayer):
+        '''
+        This function should only be called from image.py
+        Use Image.layer instead.
+        '''
+        if self.vbos:
+            self.calculateVBOList(image, True)
+            image._layer = newLayer
+            if newLayer not in self.images:
+                self.images[newLayer] = []
+                self.layers = self.images.keys()
+                self.layers.sort()
+                image.createLayer = True
+            self.calculateVBOList(image)
+            
+    def getImageSize(self, image):
+    
+        qimg = None
+        if image in self.qimages:
+            qimg = self.qimages[image][0]
+        else:
+            qimg = QImage(qimagepath)
+        
+        return qimg.size()
+        
+    def addText(self, text, pos):
+        self.texts.append([self.textid, text, pos])
+        self.textid += 1
+        return self.textid - 1
+        
+    def removeText(self, id):
+        i = 0
+        for t in self.texts:
+            if t[0] == id:
+                self.texts.pop(i)
+                return
+            i += 1
+            
+    def setTextPos(self, id, pos):
+        for t in self.texts:
+            if t[0] == id:
+                t[2] = pos
 
     def mouseMoveEvent(self, mouse):
-        self.camera[0] += mouse.pos().x() - self.lastMousePos[0]
-        self.camera[1] += mouse.pos().y() - self.lastMousePos[1]
+        if self.leftMouse:
+            self.camera[0] += mouse.pos().x() - self.lastMousePos[0]
+            self.camera[1] += mouse.pos().y() - self.lastMousePos[1]
         self.lastMousePos = [mouse.pos().x(), mouse.pos().y()]
+
+        self.mouseMoveSignal.emit(mouse.pos().x()/self.zoom - self.camera[0]/self.zoom, mouse.pos().y()/self.zoom - self.camera[1]/self.zoom)
         
         mouse.accept()
 
     def mousePressEvent(self, mouse):
-        self.lastMousePos = (mouse.pos().x(), mouse.pos().y())
-
-        button = -1
+        button = 0
+        
+        if self.ctrl:
+            print "ctrl pressed1"
+            button += 3
+        if self.shift:
+            button += 6
 
         if mouse.button() == Qt.LeftButton:
-            button = 1
-        elif mouse.button == Qt.RightButton:
-            button = 2
-        elif mouse.button == Qt.MidButton:
-            button = 3
-        self.mousePress.emit(button, (mouse.pos().x()-self.camera[0])/self.zoom, (mouse.pos().y()-self.camera[1])/self.zoom)
+            button += 0
+            self.leftMouse = True
+        elif mouse.button() == Qt.RightButton:
+            button += 2
+        elif mouse.button() == Qt.MidButton:
+            button += 1
+        self.mousePressSignal.emit(mouse.pos().x()/self.zoom - self.camera[0]/self.zoom, mouse.pos().y()/self.zoom - self.camera[1]/self.zoom, button)
 
         mouse.accept()
+        
+    def mouseReleaseEvent(self, mouse):
+        button = 0
+        
+        if self.ctrl:
+            button += 3
+        if self.shift:
+            button += 6
+
+        if mouse.button() == Qt.LeftButton:
+            button += 0
+            self.leftMouse = False
+        elif mouse.button() == Qt.RightButton:
+            button += 2
+        elif mouse.button() == Qt.MidButton:
+            button += 1
+        self.mouseReleaseSignal.emit(mouse.pos().x()/self.zoom - self.camera[0]/self.zoom, mouse.pos().y()/self.zoom - self.camera[1]/self.zoom, button)
+
+        mouse.accept()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Control:
+            self.ctrl = True
+        if event.key() == Qt.Key_Shift:
+            self.shift = True
+            
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Control:
+            self.ctrl = False
+        if event.key() == Qt.Key_Shift:
+            self.shift = False
 
     def wheelEvent(self, mouse):
         oldCoord = [mouse.pos().x(), mouse.pos().y()]
@@ -429,3 +588,7 @@ class GLWidget(QGLWidget):
 
 
         mouse.accept()
+        
+    def leaveEvent(self, event):
+        self.ctrl = False
+        self.shift = False
